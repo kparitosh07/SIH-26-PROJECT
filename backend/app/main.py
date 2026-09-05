@@ -79,7 +79,15 @@ def create_app() -> FastAPI:
     # Static file serving for local uploads (dev only)
     if settings.STORAGE_BACKEND == "local" and settings.DEBUG:
         from fastapi.staticfiles import StaticFiles
-        app.mount("/static", StaticFiles(directory="uploads"), name="static")
+        import os
+
+        upload_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "uploads"
+        )
+
+        os.makedirs(upload_dir, exist_ok=True)
+        app.mount("/static", StaticFiles(directory=upload_dir), name="static")
 
     return app
 
