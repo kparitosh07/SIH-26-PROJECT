@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "label-compliance-backend"
+version = "1.0.0"
+description = "AI-based Packaging Label Compliance Checker - Backend API"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.celery]
+app = "app.tasks.celery_app:celery_app"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.alembic]
+script_location = "alembic"
+sqlalchemy.url = "postgresql://label_user:label_pass@localhost:5432/label_compliance"

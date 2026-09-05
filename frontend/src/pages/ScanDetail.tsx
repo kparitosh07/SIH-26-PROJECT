@@ -1,0 +1,367 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { scansApi } from '../services/api';
+import type { ScanDetail } from '../services/apiTypes';
+import {
+  FileText, CheckCircle, AlertTriangle, XCircle, Download, RotateCw, RefreshCw, Trash2,
+  MoreHorizontal, ChevronDown, ChevronUp, Info, AlertCircle, DollarSign, Scale, Factory,
+  Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target
+} from 'lucide-react';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Dropdown, Alert } from '../components/UI';
+import { formatRelativeTime, formatDate, getSeverityColor, formatFileSize, cn, getStatusColor } from '../utils/helpers';
+import toast from 'react-hot-toast';
+
+const FIELD_ICONS: Record<string, React.ReactNode> = {
+  mrp: <DollarSign className="w-4 h-4" />,
+  net_quantity: <Scale className="w-4 h-4" />,
+  manufacturer: <Factory className="w-4 h-4" />,
+  dates: <Calendar className="w-4 h-4" />,
+  customer_care: <Phone className="w-4 h-4" />,
+  address: <MapPin className="w-4 h-4" />,
+  fssai: <BadgePercent className="w-4 h-4" />,
+  batch_number: <Hash className="w-4 h-4" />,
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  mrp: 'MRP (Maximum Retail Price)',
+  net_quantity: 'Net Quantity / Net Weight',
+  manufacturer: 'Manufacturer Details',
+  dates: 'Best Before / Expiry Date',
+  customer_care: 'Customer Care Contact',
+  address: 'Packaged / Registered Office Address',
+  fssai: 'FSSAI License Number',
+  batch_number: 'Batch / Lot Number',
+};
+
+export function ScanDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [scan, setScan] = useState<ScanDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showRawOcr, setShowRawOcr] = useState(false);
+
+  const fetchScan = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const res = await scansApi.get(Number(id));
+      setScan(res.data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to load scan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchScan(); }, [id]);
+
+  const handleDelete = async () => {
+    if (!scan || !confirm('Delete this scan permanently?')) return;
+    try {
+      await scansApi.delete(scan.id);
+      toast.success('Scan deleted');
+      navigate('/history');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Delete failed');
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!scan) return;
+    try {
+      await scansApi.action(scan.id, 'retry');
+      toast.success('Retry queued');
+      fetchScan();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Retry failed');
+    }
+  };
+
+  const handleReprocess = async () => {
+    if (!scan) return;
+    try {
+      await scansApi.action(scan.id, 'reprocess');
+      toast.success('Reprocessing queued');
+      fetchScan();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Reprocess failed');
+    }
+  };
+
+  const downloadFile = async () => {
+    if (!scan) return;
+    try {
+      const blob = await scansApi.download(scan.id);
+      const url = window.URL.createObjectURL(blob.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = scan.original_filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Download failed');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <Card><CardContent className="h-32" /></Card>
+          <Card><CardContent className="h-64" /></Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !scan) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-12 h-12 text-danger-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900">Scan not found</h2>
+        <p className="text-gray-500 mt-2">{error || 'The scan could not be loaded.'}</p>
+        <Button onClick={() => navigate('/history')} className="mt-4">Back to History</Button>
+      </div>
+    );
+  }
+
+  const violations = scan.violations || [];
+  const passingFields = violations.filter(v => v.status === 'pass').length;
+  const failingFields = violations.filter(v => v.status !== 'pass').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+            <a href="/history" className="hover:text-gray-700">History</a>
+            <span>/</span>
+            <span className="text-gray-900 font-medium">{scan.original_filename}</span>
+          </nav>
+          <h1 className="text-2xl font-bold text-gray-900">{scan.original_filename}</h1>
+          <p className="text-gray-500">{formatFileSize(scan.file_size_bytes)} • {scan.content_type} • {formatRelativeTime(scan.created_at)}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={downloadFile}>
+            <Download className="w-4 h-4 mr-1" /> Download
+          </Button>
+          <Dropdown
+            trigger={<Button variant="outline"><MoreHorizontal className="w-4 h-4" /></Button>}
+            items={[
+              { label: 'Retry', onClick: handleRetry, icon: <RotateCw className="w-4 h-4" /> },
+              { label: 'Reprocess', onClick: handleReprocess, icon: <RefreshCw className="w-4 h-4" /> },
+              { label: 'Delete', onClick: handleDelete, icon: <Trash2 className="w-4 h-4" />, danger: true },
+            ]}
+            align="right"
+          />
+        </div>
+      </div>
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Status</p>
+                <p className="text-2xl font-bold text-gray-900 capitalize">{scan.status}</p>
+              </div>
+              <div className={cn('p-3 rounded-xl', getStatusColor(scan.status).replace('text-', 'bg-').replace('bg-', 'bg-').replace('text-', ''))}>
+                {scan.status === 'completed' && <CheckCircle className="w-6 h-6 text-success-600" />}
+                {scan.status === 'processing' && <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />}
+                {scan.status === 'failed' && <XCircle className="w-6 h-6 text-danger-600" />}
+                {scan.status === 'uploaded' && <FileText className="w-6 h-6 text-gray-500" />}
+              </div>
+            </div>
+            {scan.progress !== undefined && scan.status === 'processing' && (
+              <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-primary-600 rounded-full transition-all" style={{ width: `${scan.progress}%` }} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Verdict</p>
+                <p className="text-2xl font-bold text-gray-900 capitalize">{scan.verdict ?? '—'}</p>
+              </div>
+              <div className={cn('p-3 rounded-xl', getSeverityColor(scan.verdict || 'pass').replace('text-', 'bg-'))}>
+                {scan.verdict === 'pass' && <CheckCircle className="w-6 h-6 text-success-600" />}
+                {scan.verdict === 'minor' && <AlertTriangle className="w-6 h-6 text-warning-600" />}
+                {scan.verdict === 'major' && <AlertTriangle className="w-6 h-6 text-orange-600" />}
+                {scan.verdict === 'critical' && <XCircle className="w-6 h-6 text-danger-600" />}
+                {!scan.verdict && <Info className="w-6 h-6 text-gray-400" />}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Compliance Score</p>
+                <p className="text-2xl font-bold text-gray-900">{scan.compliance_score?.toFixed(1) ?? '—'}%</p>
+              </div>
+              <div className="p-3 rounded-xl bg-primary-100">
+                <Target className="w-6 h-6 text-primary-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {scan.error_message && (
+        <Alert variant="danger" className="flex items-start gap-3">
+          <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Processing Failed</p>
+            <p className="text-sm mt-1 font-mono text-xs">{scan.error_message}</p>
+          </div>
+        </Alert>
+      )}
+
+      {/* Violations & Extracted Fields */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Violations */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Compliance Violations ({failingFields})
+            </CardTitle>
+            <span className="text-sm text-gray-500">{passingFields} passing • {failingFields} failing</span>
+          </CardHeader>
+          <CardContent>
+            {violations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No violations data</div>
+            ) : (
+              <div className="space-y-3">
+                {violations.map(v => (
+                  <div key={v.id} className={cn('p-4 border rounded-lg', v.status === 'pass' ? 'border-success-200 bg-success-50' : v.status === 'minor' ? 'border-warning-200 bg-warning-50' : 'border-danger-200 bg-danger-50')}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {FIELD_ICONS[v.field_key] && <span className="text-gray-400">{FIELD_ICONS[v.field_key]}</span>}
+                          <span className="font-medium text-gray-900">{v.label}</span>
+                          <Badge variant={v.status === 'pass' ? 'success' : v.status === 'minor' ? 'warning' : 'danger'}>
+                            {v.status.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{v.message}</p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {v.extracted_value && (
+                            <span className="px-2 py-0.5 bg-gray-100 rounded font-mono">
+                              Extracted: {v.extracted_value}
+                            </span>
+                          )}
+                          {v.evidence && (
+                            <span className="px-2 py-0.5 bg-gray-100 rounded font-mono truncate max-w-xs">
+                              Evidence: {v.evidence}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Extracted Fields */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Extracted Fields
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {scan.extracted_fields && Object.keys(scan.extracted_fields).length > 0 ? (
+              <div className="space-y-3">
+                {Object.entries(scan.extracted_fields).map(([key, value]) => (
+                  <div key={key} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-center gap-2 mb-1">
+                      {FIELD_ICONS[key] && <span className="text-gray-400">{FIELD_ICONS[key]}</span>}
+                      <span className="font-medium text-gray-700">{FIELD_LABELS[key] || key.replace('_', ' ').toUpperCase()}</span>
+                    </div>
+                    <div className="ml-6 text-sm">
+                      <code className="bg-white px-2 py-1 rounded border border-gray-200 font-mono text-gray-900">{String(value)}</code>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">No structured fields extracted</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* OCR Details */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            OCR Details
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">
+              Engine: {scan.ocr_engine ?? '—'} • Confidence: {scan.ocr_confidence?.toFixed(1) ?? '—'}% • Latency: {scan.ocr_latency_ms ?? '—'}ms
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(!showRawOcr)}>
+              {showRawOcr ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {scan.raw_ocr_text && (
+            <div className={cn('space-y-2', showRawOcr ? '' : 'hidden')}>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-96">
+                {scan.raw_ocr_text}
+              </pre>
+              {!showRawOcr && (
+                <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(true)} className="text-primary-600">
+                  Show raw OCR text
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Report Section */}
+      {scan.report && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Compliance Report
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Report generated</p>
+                <p className="text-sm text-gray-500">{formatDate(scan.report.created_at)}</p>
+              </div>
+              <Button onClick={() => window.open(`/api/v1/reports/${scan.report!.id}/download`, '_blank')}>
+                <Download className="w-4 h-4 mr-1" /> Download PDF
+              </Button>
+            </div>
+            {scan.report.remarks && (
+              <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded">{scan.report.remarks}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: label_compliance_postgres
+    environment:
+      POSTGRES_DB: label_compliance
+      POSTGRES_USER: label_user
+      POSTGRES_PASSWORD: label_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U label_user -d label_compliance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - label_network
+
+  # Redis for Celery
+  redis:
+    image: redis:7-alpine
+    container_name: label_compliance_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - label_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: label_compliance_backend
+    command: >
+      sh -c "alembic upgrade head && python -m app.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+psycopg2://label_user:label_pass@postgres:5432/label_compliance
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-9f8f7e6d}
+      - STORAGE_BACKEND=local
+      - LOCAL_UPLOAD_DIR=/app/uploads
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      - OCR_ENGINE=paddleocr
+      - PADDLE_DEVICE=cpu
+      - LOG_LEVEL=INFO
+      - LOG_JSON=true
+      - INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD:-Admin@12345}
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/reports:/app/reports
+      - ./backend/logs:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - label_network
+    restart: unless-stopped
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: label_compliance_celery
+    command: celery -A app.tasks.celery_app worker -Q ocr -l INFO --concurrency=2
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://label_user:label_pass@postgres:5432/label_compliance
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-9f8f7e6d}
+      - STORAGE_BACKEND=local
+      - LOCAL_UPLOAD_DIR=/app/uploads
+      - OCR_ENGINE=paddleocr
+      - PADDLE_DEVICE=cpu
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/reports:/app/reports
+      - ./backend/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - label_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Celery Beat (scheduler)
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: label_compliance_beat
+    command: celery -A app.tasks.celery_app beat -l INFO
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://label_user:label_pass@postgres:5432/label_compliance
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-9f8f7e6d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - label_network
+    restart: unless-stopped
+
+  # Frontend (nginx serving built React app + API proxy)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: label_compliance_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./backend/uploads:/var/www/uploads:ro
+    depends_on:
+      - backend
+    networks:
+      - label_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  label_network:
+    driver: bridge
