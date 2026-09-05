@@ -37,3 +37,10 @@ backend/storage/
 # Logs
 *.log
 logs/
+# Frontend generated files
+frontend/.vite/
+frontend/dist/
+
+# Backend generated/runtime files
+backend/uploads/
+backend/logs/
