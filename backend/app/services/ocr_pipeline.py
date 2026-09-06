@@ -82,37 +82,61 @@ class PaddleOCREngine(OCRBackend):
         avg_conf = float(np.mean(confs)) if confs else 0.0
         return words, avg_conf
 
-
+# ---------------------------------------------------------------------------
+# Tesseract OCR backend
+# ---------------------------------------------------------------------------
 class TesseractEngine(OCRBackend):
     name = "tesseract"
 
     def __init__(self, lang: str = "eng") -> None:
-        import pytesseract  # lazy import
+        import pytesseract
+
+        pytesseract.pytesseract.tesseract_cmd = (
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        )
 
         self._tesseract = pytesseract
         self._lang = lang
 
     def recognize(self, image: Image.Image) -> tuple[list[OCRWord], float]:
-        data = self._tesseract.image_to_data(image, lang=self._lang, output_type=self._tesseract.Output.DICT)
+        data = self._tesseract.image_to_data(
+            image,
+            lang=self._lang,
+            output_type=self._tesseract.Output.DICT,
+        )
+
         words: list[OCRWord] = []
         confs: list[float] = []
+
         for i, text in enumerate(data["text"]):
             text = text.strip()
             conf = float(data["conf"][i]) / 100.0
+
             if not text or conf < 0.05:
                 continue
-            x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
+
+            x = data["left"][i]
+            y = data["top"][i]
+            w = data["width"][i]
+            h = data["height"][i]
+
             words.append(
                 OCRWord(
                     text=text,
                     confidence=max(conf, 0.0),
-                    box=[[x, y], [x + w, y], [x + w, y + h], [x, y + h]],
+                    box=[
+                        [x, y],
+                        [x + w, y],
+                        [x + w, y + h],
+                        [x, y + h],
+                    ],
                 )
             )
+
             confs.append(max(conf, 0.0))
+
         avg_conf = float(np.mean(confs)) if confs else 0.0
         return words, avg_conf
-
 
 def _pick_backend() -> OCRBackend:
     from app.core.config import settings
