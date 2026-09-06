@@ -6,7 +6,7 @@ import {
 import { dashboardApi, scansApi } from '../services/api';
 import type { DashboardResponse, Scan } from '../services/apiTypes';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '../components/UI';
-import { cn, formatRelativeTime, getSeverityColor } from '../utils/helpers';
+import { cn, formatRelativeTime, getSeverityColor, getErrorMessage } from '../utils/helpers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
@@ -28,7 +28,7 @@ export function Dashboard() {
       setData(dashRes.data.data);
       setRecentScans(scansRes.data.data?.items || []);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load dashboard');
+      setError(getErrorMessage(err, 'Failed to load dashboard'));
     } finally {
       setLoading(false);
     }

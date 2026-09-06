@@ -4,7 +4,7 @@ import type { User } from '../services/apiTypes';
 import { UserPlus, Search, ChevronLeft, ChevronRight, Edit, Trash2, MoreHorizontal, UserCheck, UserX, Loader2 } from 'lucide-react';
 import { Button, Card, CardContent, Input, Badge, Modal, Dropdown } from '../components/UI';
 import { useForm } from '../hooks/useForm';
-import { cn, getRoleBadge, formatRelativeTime } from '../utils/helpers';
+import { cn, getRoleBadge, formatRelativeTime, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 interface UserForm {
@@ -32,7 +32,7 @@ export function AdminUsers() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const { values, handleChange, setFieldValue, errors, setFieldError, resetForm, validate } = useForm<UserForm>({
+  const { values, handleChange, setFieldValue, errors, resetForm } = useForm<UserForm>({
     username: '',
     email: '',
     password: '',
@@ -80,16 +80,17 @@ export function AdminUsers() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-
-    if (!editingUser && values.password !== values.confirmPassword) {
-      setFieldError('confirmPassword', 'Passwords do not match');
-      return;
+    if (!editingUser) {
+      if (values.password !== values.confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
     }
 
     try {
       if (editingUser) {
         await usersApi.update(editingUser.id, {
+          email: values.email,
           full_name: values.full_name,
           role: values.role,
           department: values.department || undefined,
@@ -112,7 +113,7 @@ export function AdminUsers() {
       setShowModal(false);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Operation failed');
+      toast.error(getErrorMessage(err, 'Operation failed'));
     }
   };
 
@@ -124,7 +125,7 @@ export function AdminUsers() {
       toast.success('User deleted');
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Delete failed');
+      toast.error(getErrorMessage(err, 'Delete failed'));
     } finally {
       setDeletingId(null);
     }
@@ -136,7 +137,7 @@ export function AdminUsers() {
       toast.success(`User ${user.is_active ? 'deactivated' : 'activated'}`);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to update');
+      toast.error(getErrorMessage(err, 'Failed to update'));
     }
   };
 

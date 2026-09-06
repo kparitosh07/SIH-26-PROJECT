@@ -5,7 +5,7 @@ import { scansApi } from '../services/api';
 import type { Product } from '../services/apiTypes';
 import { Upload, FileText, Loader2, CheckCircle, XCircle, Image, AlertCircle, ChevronDown } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Alert } from '../components/UI';
-import { formatFileSize, cn } from '../utils/helpers';
+import { formatFileSize, cn, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'application/pdf'];
@@ -88,7 +88,7 @@ export function ScanUpload() {
       toast.success(`${uploadFile.file.name} uploaded successfully`);
       return scan;
     } catch (err: any) {
-      const message = err.response?.data?.detail || 'Upload failed';
+      const message = getErrorMessage(err, 'Upload failed');
       setFiles(prev => prev.map(f => f.id === uploadFile.id ? { ...f, status: 'error' as const, error: message } : f));
       toast.error(`${uploadFile.file.name}: ${message}`);
     }

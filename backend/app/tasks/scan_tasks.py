@@ -32,8 +32,7 @@ def _update_scan_status(db: Session, scan_id: int, status: ScanStatus, progress:
         db.commit()
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60, name="app.tasks.scan_tasks.process_scan_task")
-def process_scan_task(self, scan_id: int) -> dict[str, Any]:
+def run_scan_processing(scan_id: int) -> dict[str, Any]:
     db: Session = SessionLocal()
     try:
         scan = db.get(Scan, scan_id)
@@ -99,9 +98,17 @@ def process_scan_task(self, scan_id: int) -> dict[str, Any]:
     except Exception as exc:
         logger.exception("Scan %s failed: %s", scan_id, exc)
         _update_scan_status(db, scan_id, ScanStatus.FAILED, 0, traceback.format_exc(limit=3))
+        return {"status": "error", "message": str(exc)}
+    finally:
+        db.close()
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60, name="app.tasks.scan_tasks.process_scan_task")
+def process_scan_task(self, scan_id: int) -> dict[str, Any]:
+    try:
+        return run_scan_processing(scan_id)
+    except Exception as exc:
         try:
             raise self.retry(exc=exc)
         except Exception:
             return {"status": "error", "message": str(exc)}
-    finally:
-        db.close()

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useForm } from '../hooks/useForm';
 import { ShieldCheck, Mail, Lock, User, UserPlus } from 'lucide-react';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle, Alert } from '../components/UI';
+import { getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 interface RegisterForm {
@@ -86,7 +87,7 @@ export function Register() {
       toast.success('Account created! Please sign in.');
       navigate('/login');
     } catch (err: any) {
-      const message = err.response?.data?.detail || 'Registration failed. Please try again.';
+      const message = getErrorMessage(err, 'Registration failed. Please try again.');
       setError(message);
       toast.error(message);
     } finally {

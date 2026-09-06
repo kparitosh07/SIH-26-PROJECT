@@ -73,3 +73,32 @@ export function truncate(text: string, maxLength: number) {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
 }
+
+export function getErrorMessage(err: any, fallback = 'An error occurred'): string {
+  if (!err) return fallback;
+
+  const detail = err.response?.data?.detail;
+  if (typeof detail === 'string') {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail.map(item => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        const locStr = Array.isArray(item.loc) ? item.loc.filter((l: any) => l !== 'body' && l !== 'query').join('.') : '';
+        return item.msg ? (locStr ? `${locStr}: ${item.msg}` : item.msg) : JSON.stringify(item);
+      }
+      return String(item);
+    });
+    return messages.join(', ');
+  }
+  if (detail && typeof detail === 'object') {
+    if (typeof detail.msg === 'string') return detail.msg;
+    if (typeof detail.message === 'string') return detail.message;
+    return JSON.stringify(detail);
+  }
+  if (typeof err.message === 'string') {
+    return err.message;
+  }
+  return fallback;
+}

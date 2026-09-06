@@ -3,7 +3,7 @@ import { auditApi } from '../services/api';
 import type { AuditLog } from '../services/apiTypes';
 import { Search, ChevronLeft, ChevronRight, Eye, User, RefreshCw, Loader2 } from 'lucide-react';
 import { Button, Card, CardContent, Badge, Modal } from '../components/UI';
-import { formatRelativeTime, formatDate, cn } from '../utils/helpers';
+import { formatRelativeTime, formatDate, cn, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 export function AdminAudit() {
@@ -36,7 +36,7 @@ export function AdminAudit() {
       setLogs(res.data.data?.items || []);
       setTotal(res.data.data?.total || 0);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to load audit logs');
+      toast.error(getErrorMessage(err, 'Failed to load audit logs'));
     } finally {
       setLoading(false);
     }

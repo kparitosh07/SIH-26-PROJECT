@@ -3,7 +3,7 @@ import { reportsApi, scansApi } from '../services/api';
 import type { Report, Scan } from '../services/apiTypes';
 import { FileText, Download, Eye, ChevronLeft, ChevronRight, RefreshCw, MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Dropdown, Modal } from '../components/UI';
-import { formatRelativeTime, formatDate } from '../utils/helpers';
+import { formatRelativeTime, formatDate, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 export function Reports() {
@@ -23,7 +23,7 @@ export function Reports() {
       setReports(res.data.data?.items || []);
       setTotal(res.data.data?.total || 0);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to load reports');
+      toast.error(getErrorMessage(err, 'Failed to load reports'));
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function Reports() {
       toast.success('Report deleted');
       fetchReports();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Delete failed');
+      toast.error(getErrorMessage(err, 'Delete failed'));
     }
   };
 
@@ -245,7 +245,7 @@ function GenerateReportModal({ onClose }: { onClose: () => void }) {
       setSelectedScan(null);
       onClose();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to generate');
+      toast.error(getErrorMessage(err, 'Failed to generate'));
     } finally {
       setGenerating(false);
     }

@@ -6,9 +6,6 @@ const API_BASE =
 
 const api = axios.create({
   baseURL: API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-  },
   timeout: 30000,
 });
 
@@ -111,10 +108,12 @@ export const scansApi = {
     form.append('file', file);
     if (product_id) form.append('product_id', String(product_id));
     return api.post<ApiResponse<any>>('/scans/upload', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
   },
-  list: (params?: { page?: number; page_size?: number; status?: string; verdict?: string; product_id?: number }) =>
+  list: (params?: { page?: number; page_size?: number; status?: string; verdict?: string; product_id?: number; search?: string }) =>
     api.get<ApiResponse<any>>('/scans', { params }),
   get: (id: number) => api.get<ApiResponse<any>>(`/scans/${id}`),
   download: (id: number) => api.get(`/scans/${id}/download`, { responseType: 'blob' }),

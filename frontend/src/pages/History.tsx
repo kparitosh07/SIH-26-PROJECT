@@ -3,7 +3,7 @@ import { scansApi } from '../services/api';
 import type { Scan, Violation } from '../services/apiTypes';
 import { Search, ChevronLeft, ChevronRight, Download, Eye, RefreshCw, RotateCw, Trash2, MoreHorizontal, Loader2, FileText, AlertCircle } from 'lucide-react';
 import { Button, Card, CardContent, Badge, Dropdown, Modal } from '../components/UI';
-import { formatRelativeTime, getSeverityColor, formatFileSize } from '../utils/helpers';
+import { formatRelativeTime, getSeverityColor, formatFileSize, getErrorMessage } from '../utils/helpers';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -28,17 +28,31 @@ export function History() {
   const fetchScans = async () => {
     setLoading(true);
     try {
-      const res = await scansApi.list({ page, page_size: pageSize, status: statusFilter || undefined, verdict: verdictFilter || undefined });
+      const res = await scansApi.list({ page, page_size: pageSize, status: statusFilter || undefined, verdict: verdictFilter || undefined, search: search || undefined });
       setScans(res.data.data?.items || []);
       setTotal(res.data.data?.total || 0);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Failed to load scans');
+      toast.error(getErrorMessage(err, 'Failed to load scans'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchScans(); }, [page, statusFilter, verdictFilter]);
+  useEffect(() => { fetchScans(); }, [page, statusFilter, verdictFilter, search]);
+
+  useEffect(() => {
+    const hasPending = scans.some(s => s.status === 'uploaded' || s.status === 'processing');
+    if (!hasPending) return;
+    const interval = setInterval(() => {
+      scansApi.list({ page, page_size: pageSize, status: statusFilter || undefined, verdict: verdictFilter || undefined, search: search || undefined })
+        .then(res => {
+          setScans(res.data.data?.items || []);
+          setTotal(res.data.data?.total || 0);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [scans, page, pageSize, statusFilter, verdictFilter, search]);
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this scan? This action cannot be undone.')) return;
@@ -48,7 +62,7 @@ export function History() {
       toast.success('Scan deleted');
       fetchScans();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Delete failed');
+      toast.error(getErrorMessage(err, 'Delete failed'));
     } finally {
       setDeletingId(null);
     }
@@ -60,7 +74,7 @@ export function History() {
       toast.success('Retry queued');
       fetchScans();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Retry failed');
+      toast.error(getErrorMessage(err, 'Retry failed'));
     }
   };
 
@@ -70,7 +84,7 @@ export function History() {
       toast.success('Reprocessing queued');
       fetchScans();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Reprocess failed');
+      toast.error(getErrorMessage(err, 'Reprocess failed'));
     }
   };
 

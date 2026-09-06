@@ -21,15 +21,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await authApi.me();
       setUser(res.data.data);
-    } catch {
+      return res.data.data;
+    } catch (err) {
       setUser(null);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshUser();
+    refreshUser().catch(() => {});
   }, []);
 
   const login = async (username: string, password: string) => {

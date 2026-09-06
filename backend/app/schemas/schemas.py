@@ -73,7 +73,7 @@ class ChangePasswordRequest(BaseModel):
 class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    email: EmailStr
+    email: str
     username: str
     full_name: str
     role: str

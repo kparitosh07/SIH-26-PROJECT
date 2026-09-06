@@ -8,7 +8,7 @@ import {
   Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target
 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Dropdown, Alert } from '../components/UI';
-import { formatRelativeTime, formatDate, getSeverityColor, formatFileSize, cn, getStatusColor } from '../utils/helpers';
+import { formatRelativeTime, formatDate, getSeverityColor, formatFileSize, cn, getStatusColor, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const FIELD_ICONS: Record<string, React.ReactNode> = {
@@ -41,20 +41,28 @@ export function ScanDetail() {
   const [error, setError] = useState('');
   const [showRawOcr, setShowRawOcr] = useState(false);
 
-  const fetchScan = async () => {
+  const fetchScan = async (showLoading = true) => {
     if (!id) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const res = await scansApi.get(Number(id));
       setScan(res.data.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load scan');
+      if (showLoading) setError(getErrorMessage(err, 'Failed to load scan'));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
-  useEffect(() => { fetchScan(); }, [id]);
+  useEffect(() => { fetchScan(true); }, [id]);
+
+  useEffect(() => {
+    if (!scan || scan.status === 'completed' || scan.status === 'failed') return;
+    const interval = setInterval(() => {
+      fetchScan(false);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [id, scan?.status]);
 
   const handleDelete = async () => {
     if (!scan || !confirm('Delete this scan permanently?')) return;
@@ -63,7 +71,7 @@ export function ScanDetail() {
       toast.success('Scan deleted');
       navigate('/history');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Delete failed');
+      toast.error(getErrorMessage(err, 'Delete failed'));
     }
   };
 
@@ -74,7 +82,7 @@ export function ScanDetail() {
       toast.success('Retry queued');
       fetchScan();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Retry failed');
+      toast.error(getErrorMessage(err, 'Retry failed'));
     }
   };
 
@@ -85,7 +93,7 @@ export function ScanDetail() {
       toast.success('Reprocessing queued');
       fetchScan();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Reprocess failed');
+      toast.error(getErrorMessage(err, 'Reprocess failed'));
     }
   };
 

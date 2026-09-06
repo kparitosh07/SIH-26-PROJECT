@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useForm } from '../hooks/useForm';
 import { ShieldCheck, Mail, Lock } from 'lucide-react';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle, Alert } from '../components/UI';
+import { getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 interface LoginForm {
@@ -49,9 +50,9 @@ export function Login() {
     try {
       await login(values.username_or_email, values.password);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      const message = err.response?.data?.detail || 'Invalid credentials. Please try again.';
+      const message = getErrorMessage(err, 'Invalid credentials. Please try again.');
       setError(message);
       toast.error(message);
     } finally {
