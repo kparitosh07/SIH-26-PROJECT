@@ -27,8 +27,10 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "money",
         "severity_if_missing": ScanSeverity.CRITICAL,
         "patterns": [
-            r"MRP\s*(?:\(.*?\))?\s*[:.]?\s*(?:Rs\.?|INR|₹)?\s*(\d{1,4}(?:[.,]\d{1,2})?)",
-            r"MAX(?:IMUM)?\s+RET(?:AIL)?\s+PRICE\s*(?:Rs\.?|INR|₹)?\s*(\d{1,4}(?:[.,]\d{1,2})?)",
+            r"MRP\s*(?:\(.*?\))?\s*[:.]?\s*(?:Rs\.?|INR|₹)?\s*(\d{1,5}(?:[.,]\d{1,2})?)",
+            r"(?:Rs\.?|INR|₹)\s*(\d{1,5}(?:[.,]\d{1,2})?)",
+            r"MAX(?:IMUM)?\s+RET(?:AIL)?\s+PRICE\s*(?:Rs\.?|INR|₹)?\s*(\d{1,5}(?:[.,]\d{1,2})?)",
+            r"\b(\d{1,4}\.\d{2})\b",
         ],
     },
     "net_quantity": {
@@ -36,9 +38,10 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "quantity",
         "severity_if_missing": ScanSeverity.CRITICAL,
         "patterns": [
-            r"NET\s+(?:WT\.?|WEIGHT|QTY\.?|QUANTITY|CONTENT)\s*[=:]?\s*([\d.,]+\s*(?:g|kg|ml|l|L|mg|gm|kgs?\.?|litre?s?|grams?)?)",
+            r"NET\s+(?:WT\.?|WEIGHT|QTY\.?|QUANTITY|CONTENT|VOL(?:UME)?)\s*[=:]?\s*([\d.,]+\s*(?:g|kg|ml|l|L|mg|gm|kgs?\.?|litre?s?|grams?|pcs)?)",
             r"NET WT[.\s]*[:=]?\s*([\d.,]+\s*(?:g|kg|ml|l|L|mg)?)",
             r"NET\s+QUANTITY\s*[=:]?\s*([\d.,]+\s*(?:g|kg|ml|l|L)?)",
+            r"\b([\d.,]+\s*(?:ml|l|L|g|kg|gm))\b",
         ],
     },
     "manufacturer": {
@@ -46,8 +49,9 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "text_keyword",
         "severity_if_missing": ScanSeverity.MAJOR,
         "patterns": [
-            r"(?:M(?:ANUFACTURED|FG)\s+BY|MFG\s*BY|M(?:ANUFACTURER)|\bMFG\.?)\s*[=:]?\s*([A-Za-z][A-Za-z0-9 &.'-]{2,})",
-            r"(?:A\s+(?:GROUP\s+)?COMPANY\s+OF|PRODUCED BY)\s*[=:]?\s*([A-Za-z][A-Za-z0-9 &.'-]{2,})",
+            r"(?:M(?:ANUFACTURED|FG)\s+(?:BY|IN)|MFG\s*BY|M(?:ANUFACTURER)|\bMFG\.?)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{2,})",
+            r"(?:PROCTER\s*&\s*GAMBLE|P&G|UNILEVER|NESTLE|DABUR|BRITANNIA|MARICO|ITC|HINDUSTAN)\s*([A-Za-z0-9 &.'-]{0,30})",
+            r"(?:A\s+(?:GROUP\s+)?COMPANY\s+OF|PRODUCED BY|MARKETED BY|MKT BY)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{2,})",
         ],
     },
     "dates": {
@@ -55,9 +59,11 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "date",
         "severity_if_missing": ScanSeverity.MAJOR,
         "patterns": [
+            r"(?:BEST\s+BEFORE|USE\s+BEFORE|USE\s+WITHIN|CONSUME\s+WITHIN|SHELF\s+LIFE)\s*[:.]?\s*(\d{1,3}\s*(?:DAYS?|MONTHS?|YEARS?|WEEKS?)(?:\s+FROM\s+[A-Za-z\s]{2,25})?)",
             r"(?:BEST\s+BEFORE(?:\s+\d+\s+(?:MONTHS|DAYS))?|EXPIRY|EXP(?:IRES)?.?\s+DATE)\s*[:.]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4}|\d{1,2}\s[A-Z]{3}\s?\d{2,4})",
             r"(?:USE\s+BY|SELL\s+BY|USE\s+BEFORE)\s*[:.]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4})",
-            r"M\.?F\.?G\s*[.:]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4})",
+            r"(?:M\.?F\.?G|PKD|PACKED)\s*[.:]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4}|\d{2}/\d{2,4})",
+            r"\b(\d{2}/\d{2,4})\b",
         ],
     },
     "customer_care": {
@@ -65,8 +71,9 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "contact",
         "severity_if_missing": ScanSeverity.MAJOR,
         "patterns": [
-            r"(?:CUSTOMER\s+CARE|TOLL\s+FREE|TOLLFREE)\s*(?:NO\.?|NUMBER)?\s*[.=:]?\s*(\+?\d[\d\s.-]{7,}\d)",
+            r"(?:CUSTOMER\s+CARE|TOLL\s+FREE|TOLLFREE|CONSUMER)\s*(?:NO\.?|NUMBER|CELL)?\s*[.=:]?\s*(\+?\d[\d\s.-]{7,}\d)",
             r"\b(?:1[89]00|1800|1860)\d{7}\b",
+            r"\b(\d{10})\b",
         ],
     },
     "address": {
@@ -74,7 +81,7 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "text_keyword",
         "severity_if_missing": ScanSeverity.MINOR,
         "patterns": [
-            r"(?:PACKED\s+AT|PACKAGED\s+(?:AT|BY)|REGISTERED\s+OFFICE|CORPORATE\s+OFFICE)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9,./&'() -]{15,})",
+            r"(?:PACKED\s+AT|PACKAGED\s+(?:AT|BY)|REGISTERED\s+OFFICE|CORPORATE\s+OFFICE|ADDRESS)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9,./&'() -]{10,})",
         ],
     },
     "fssai": {
@@ -84,6 +91,7 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "patterns": [
             r"\bLIC(?:ENSE)?\.?\s+NO\.?\s*[=:]?\s*(\d{14})",
             r"\bFSSAI\s*(?:LICENSE\s+NO\.?)?\s*[=:]?\s*(\d{14})",
+            r"\b(\d{14})\b",
         ],
     },
     "batch_number": {
@@ -91,7 +99,8 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "text_keyword",
         "severity_if_missing": ScanSeverity.MINOR,
         "patterns": [
-            r"\b(?:BATCH|LOT)\s*(?:NO\.?|NUMBER)?\s*[=:.]?\s*([A-Z0-9][A-Z0-9/-]{2,})",
+            r"\b(?:BATCH|LOT|B\.NO|L\.NO)\s*(?:NO\.?|NUMBER)?\s*[=:.]?\s*([A-Z0-9][A-Z0-9/-]{2,})",
+            r"\b([A-Z0-9]{6,12})\b",
         ],
     },
 }
@@ -126,7 +135,12 @@ def _validate_quantity(value: str) -> bool:
 
 
 def _validate_date(value: str) -> bool:
-    normal = re.sub(r"\s+", "", value).upper()
+    val_upper = value.upper().strip()
+    # Check relative shelf life / duration statements (e.g. "30 DAYS", "6 MONTHS FROM PACKAGING")
+    if re.search(r"\d{1,3}\s*(?:DAYS?|MONTHS?|YEARS?|WEEKS?)", val_upper):
+        return True
+
+    normal = re.sub(r"\s+", "", val_upper)
     return bool(
         re.fullmatch(
             r"(?:\d{1,2}[/-]\d{2,4}"                            # 12/2027, 07/26

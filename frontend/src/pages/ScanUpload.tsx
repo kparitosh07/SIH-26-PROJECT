@@ -161,15 +161,21 @@ export function ScanUpload() {
     setIsUploading(true);
     setError('');
 
+    let lastScanId: number | undefined;
     for (const f of files) {
       if (f.status === 'pending') {
-        await uploadFile(f);
+        const scan = await uploadFile(f);
+        if (scan?.id) lastScanId = scan.id;
       }
     }
 
     setIsUploading(false);
-    // Navigate to history after a short delay
-    setTimeout(() => navigate('/history'), 1500);
+    if (lastScanId && files.filter(f => f.status === 'completed' || f.status === 'pending').length === 1) {
+      toast.success('Navigating to OCR scan results...');
+      setTimeout(() => navigate(`/scan/${lastScanId}`), 600);
+    } else {
+      setTimeout(() => navigate('/history'), 1200);
+    }
   };
 
   const clearCompleted = () => {
@@ -346,9 +352,16 @@ export function ScanUpload() {
                       <Loader2 className="w-5 h-5 text-primary-600 animate-spin" />
                     )}
                     {f.status === 'completed' && (
-                      <Badge variant="success" className="flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Done
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="success" className="flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5" /> Done
+                        </Badge>
+                        {f.scanId && (
+                          <Button size="sm" variant="outline" onClick={() => navigate(`/scan/${f.scanId}`)} className="text-xs">
+                            View Results →
+                          </Button>
+                        )}
+                      </div>
                     )}
                     {f.status === 'error' && (
                       <Badge variant="danger" className="flex items-center gap-1">

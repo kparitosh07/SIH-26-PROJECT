@@ -39,7 +39,7 @@ export function ScanDetail() {
   const [scan, setScan] = useState<ScanDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showRawOcr, setShowRawOcr] = useState(false);
+  const [showRawOcr, setShowRawOcr] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
@@ -356,31 +356,52 @@ export function ScanDetail() {
 
       {/* OCR Details */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            OCR Details
+            <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            Extracted OCR Text & Details
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">
-              Engine: {scan.ocr_engine ?? '—'} • Confidence: {scan.ocr_confidence?.toFixed(1) ?? '—'}% • Latency: {scan.ocr_latency_ms ?? '—'}ms
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+              Engine: <span className="font-semibold text-gray-800 dark:text-slate-200">{scan.ocr_engine ?? '—'}</span> • Confidence: <span className="font-semibold text-gray-800 dark:text-slate-200">{scan.ocr_confidence?.toFixed(1) ?? '—'}%</span> • Latency: <span className="font-semibold text-gray-800 dark:text-slate-200">{scan.ocr_latency_ms ?? '—'}ms</span>
             </span>
-            <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(!showRawOcr)}>
-              {showRawOcr ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
+            {scan.raw_ocr_text && (
+              <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(!showRawOcr)}>
+                {showRawOcr ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          {scan.raw_ocr_text && (
-            <div className={cn('space-y-2', showRawOcr ? '' : 'hidden')}>
-              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-96">
-                {scan.raw_ocr_text}
-              </pre>
-              {!showRawOcr && (
-                <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(true)} className="text-primary-600">
-                  Show raw OCR text
-                </Button>
+          {scan.raw_ocr_text ? (
+            <div className="space-y-3">
+              {showRawOcr && (
+                <div className="relative">
+                  <pre className="bg-slate-950 text-sky-300 p-4 rounded-xl text-xs overflow-x-auto font-mono max-h-96 leading-relaxed border border-slate-800 shadow-inner whitespace-pre-wrap selection:bg-sky-500 selection:text-white">
+                    {scan.raw_ocr_text}
+                  </pre>
+                </div>
               )}
+              <div className="flex items-center justify-between pt-1">
+                <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+                  {scan.raw_ocr_text.split('\n').filter(Boolean).length} text line(s) recognized on packaging label
+                </p>
+                <Button variant="ghost" size="sm" onClick={() => setShowRawOcr(!showRawOcr)} className="text-primary-600 dark:text-primary-400 font-semibold">
+                  {showRawOcr ? 'Hide Raw Text' : 'View Extracted OCR Text'}
+                </Button>
+              </div>
+            </div>
+          ) : scan.status === 'processing' || scan.status === 'uploaded' ? (
+            <div className="flex items-center justify-center gap-3 py-8 text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-950/20 rounded-xl border border-primary-100 dark:border-primary-900/40">
+              <Loader2 className="w-6 h-6 animate-spin flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm font-bold text-gray-900 dark:text-slate-100">OCR Text Extraction in Progress...</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Processing label image with AI engine ({scan.progress ?? 0}%)</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500 dark:text-slate-400 text-sm">
+              No raw OCR text extracted for this scan.
             </div>
           )}
         </CardContent>
