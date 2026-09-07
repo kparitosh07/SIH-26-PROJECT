@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Star, Bell } from 'lucide-react';
+import { Sun, Moon, Star, Bell, Menu } from 'lucide-react';
 import { cn } from '../utils/helpers';
 
 export function AshokaEmblem({ className = "w-11 h-14 text-amber-700 dark:text-amber-400" }: { className?: string }) {
@@ -43,7 +43,7 @@ export function AshokaEmblem({ className = "w-11 h-14 text-amber-700 dark:text-a
   );
 }
 
-export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
+export function GovHeader({ onOpenFeedback, onToggleSidebar }: { onOpenFeedback?: () => void; onToggleSidebar?: () => void }) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
@@ -130,10 +130,20 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
 
       {/* Main Government Portal Navigation Bar */}
       <div className="bg-slate-900 dark:bg-slate-950 text-white border-t border-slate-800 shadow-md">
-        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-12 gap-4">
-          {/* Left: Active Section Title */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold tracking-wide text-sky-400 uppercase">
+        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-12 gap-2 sm:gap-4">
+          {/* Left: Mobile Menu Toggle + Active Section Title */}
+          <div className="flex items-center gap-2 min-w-0">
+            {onToggleSidebar && (
+              <button
+                type="button"
+                onClick={onToggleSidebar}
+                className="lg:hidden p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
+                aria-label="Toggle navigation menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+            <span className="text-xs sm:text-sm font-bold tracking-wide text-sky-400 uppercase truncate">
               {getPageTitle()}
             </span>
           </div>

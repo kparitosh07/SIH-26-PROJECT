@@ -66,12 +66,12 @@ export function Dashboard() {
       <Card className="bg-white border-2 border-sky-200 dark:bg-slate-900 dark:border-slate-800 overflow-hidden relative shadow-sm">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 text-xs font-bold mb-3 border border-sky-200 dark:border-sky-800">
-                <Shield className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" />
-                Ministry of Consumer Affairs &bull; Official Compliance Portal
+            <div className="min-w-0 flex-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 text-xs font-bold mb-3 border border-sky-200 dark:border-sky-800 max-w-full truncate">
+                <Shield className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400 flex-shrink-0" />
+                <span className="truncate">Ministry of Consumer Affairs &bull; Official Compliance Portal</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-slate-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-slate-100 tracking-tight break-words">
                 Welcome, {user?.full_name || 'Inspector'}
               </h1>
               <p className="text-slate-800 dark:text-slate-200 font-semibold text-sm sm:text-base mt-1">
