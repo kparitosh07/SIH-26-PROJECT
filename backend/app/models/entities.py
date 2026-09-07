@@ -193,3 +193,19 @@ class AuditLog(Base, AuditableMixin):
 
     def __repr__(self) -> str:
         return f"<AuditLog id={self.id} action={self.action}>"
+
+
+class Feedback(Base, AuditableMixin):
+    """User rating and feedback entity."""
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    rating: Mapped[int] = mapped_column(nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False, default="general")
+    comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    user: Mapped["User | None"] = relationship()
+
+    def __repr__(self) -> str:
+        return f"<Feedback id={self.id} rating={self.rating} category={self.category}>"

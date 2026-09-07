@@ -4,10 +4,10 @@
 
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-slate-800;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100 antialiased transition-colors duration-200;
   }
 }
 
@@ -19,22 +19,22 @@
     @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
   }
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500;
+    @apply btn bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 focus:ring-gray-500;
   }
   .btn-danger {
     @apply btn bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
   }
   .btn-ghost {
-    @apply btn bg-transparent hover:bg-gray-100 focus:ring-gray-500;
+    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 focus:ring-gray-500;
   }
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors;
   }
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
@@ -72,4 +72,216 @@
     background-color: #cbd5e1;
     border-radius: 3px;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Global Theme Overrides (Light Mode vs Dark Mode)
+   --------------------------------------------------------------------------- */
+
+/* Light Mode Rules (html without "dark" class) */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) aside,
+html:not(.dark) header,
+html:not(.dark) nav,
+html:not(.dark) .card,
+html:not(.dark) .bg-white {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .bg-gray-50 {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) .bg-gray-100 {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .bg-gray-200 {
+  background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) h5,
+html:not(.dark) h6,
+html:not(.dark) .text-gray-900,
+html:not(.dark) .text-gray-800 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .text-gray-700,
+html:not(.dark) .text-gray-600 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-gray-400 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .border-gray-100,
+html:not(.dark) .border-gray-200,
+html:not(.dark) .border-gray-300 {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) select,
+html:not(.dark) input,
+html:not(.dark) textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) code {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) table thead tr,
+html:not(.dark) table thead th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+}
+
+html:not(.dark) table tbody tr:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Dark Mode Rules (html with "dark" class) */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark aside,
+html.dark header,
+html.dark nav,
+html.dark .card,
+html.dark .bg-white {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #475569 !important;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6,
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+  border-color: #334155 !important;
+}
+
+html.dark select,
+html.dark input,
+html.dark textarea {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark option {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+html.dark code {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark table thead tr,
+html.dark table thead th {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+}
+
+html.dark table tbody tr:hover {
+  background-color: #334155 !important;
+}
+
+/* Dark Mode Alert & Violation Container Overrides */
+html.dark .bg-danger-50 {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+html.dark .border-danger-200 {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+html.dark .bg-warning-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+html.dark .border-warning-200 {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+html.dark .bg-success-50 {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+}
+html.dark .border-success-200 {
+  border-color: rgba(34, 197, 94, 0.4) !important;
+}
+
+html.dark .bg-primary-50 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+html.dark .border-primary-200 {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.4) !important;
 }

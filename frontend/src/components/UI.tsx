@@ -13,10 +13,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
     const variants = {
       primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-      secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500',
+      secondary: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 focus:ring-gray-500',
       danger: 'bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500',
-      ghost: 'bg-transparent hover:bg-gray-100 focus:ring-gray-500',
-      outline: 'border border-gray-300 bg-white hover:bg-gray-50 focus:ring-primary-500',
+      ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 focus:ring-gray-500',
+      outline: 'border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 hover:bg-gray-50 dark:hover:bg-slate-800 focus:ring-primary-500',
     };
     const sizes = {
       sm: 'px-3 py-1.5 text-sm',
@@ -49,14 +49,14 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, leftIcon, ...props }, ref) => (
     <div className="w-full">
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{label}</label>}
       <div className="relative">
-        {leftIcon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{leftIcon}</div>}
+        {leftIcon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500">{leftIcon}</div>}
         <input
           ref={ref}
           className={cn(
-            'w-full py-2 rounded-lg border bg-white text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
-            error ? 'border-danger-500 focus:ring-danger-500' : 'border-gray-300',
+            'w-full py-2 rounded-lg border bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
+            error ? 'border-danger-500 focus:ring-danger-500' : 'border-gray-300 dark:border-slate-700',
             leftIcon ? 'pl-10' : 'px-3',
             className
           )}
@@ -65,8 +65,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
       </div>
-      {error && <p id={`${props.id}-error`} className="mt-1 text-sm text-danger-600" role="alert">{error}</p>}
-      {helperText && !error && <p id={`${props.id}-helper`} className="mt-1 text-sm text-gray-500">{helperText}</p>}
+      {error && <p id={`${props.id}-error`} className="mt-1 text-sm text-danger-600 dark:text-danger-400" role="alert">{error}</p>}
+      {helperText && !error && <p id={`${props.id}-helper`} className="mt-1 text-sm text-gray-500 dark:text-slate-400">{helperText}</p>}
     </div>
   )
 );
@@ -82,20 +82,20 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, helperText, ...props }, ref) => (
     <div className="w-full">
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{label}</label>}
       <textarea
         ref={ref}
         className={cn(
-          'w-full px-3 py-2 rounded-lg border bg-white text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y',
-          error ? 'border-danger-500 focus:ring-danger-500' : 'border-gray-300',
+          'w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y',
+          error ? 'border-danger-500 focus:ring-danger-500' : 'border-gray-300 dark:border-slate-700',
           className
         )}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${props.id}-error` : helperText ? `${props.id}-helper` : undefined}
         {...props}
       />
-      {error && <p id={`${props.id}-error`} className="mt-1 text-sm text-danger-600" role="alert">{error}</p>}
-      {helperText && !error && <p id={`${props.id}-helper`} className="mt-1 text-sm text-gray-500">{helperText}</p>}
+      {error && <p id={`${props.id}-error`} className="mt-1 text-sm text-danger-600 dark:text-danger-400" role="alert">{error}</p>}
+      {helperText && !error && <p id={`${props.id}-helper`} className="mt-1 text-sm text-gray-500 dark:text-slate-400">{helperText}</p>}
     </div>
   )
 );
@@ -103,17 +103,17 @@ Textarea.displayName = 'Textarea';
 
 // Card
 export const Card = ({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('bg-white rounded-xl border border-gray-200 shadow-sm', className)} {...props}>
+  <div className={cn('bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors', className)} {...props}>
     {children}
   </div>
 );
 
 export const CardHeader = ({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('px-6 py-4 border-b border-gray-200', className)} {...props}>{children}</div>
+  <div className={cn('px-6 py-4 border-b border-gray-200 dark:border-slate-800', className)} {...props}>{children}</div>
 );
 
 export const CardTitle = ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-  <h3 className={cn('text-lg font-semibold text-gray-900', className)} {...props}>{children}</h3>
+  <h3 className={cn('text-lg font-semibold text-gray-900 dark:text-slate-100', className)} {...props}>{children}</h3>
 );
 
 export const CardContent = ({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) => (
@@ -123,12 +123,12 @@ export const CardContent = ({ children, className, ...props }: HTMLAttributes<HT
 // Badge
 export const Badge = ({ children, variant = 'default', className, ...props }: HTMLAttributes<HTMLSpanElement> & { variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'gray' }) => {
   const variants = {
-    default: 'bg-gray-100 text-gray-600',
-    success: 'bg-success-100 text-success-600',
-    warning: 'bg-warning-100 text-warning-600',
-    danger: 'bg-danger-100 text-danger-600',
-    info: 'bg-primary-100 text-primary-600',
-    gray: 'bg-gray-100 text-gray-600',
+    default: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300',
+    success: 'bg-success-100 dark:bg-success-950/60 text-success-600 dark:text-success-400',
+    warning: 'bg-warning-100 dark:bg-warning-950/60 text-warning-600 dark:text-warning-400',
+    danger: 'bg-danger-100 dark:bg-danger-950/60 text-danger-600 dark:text-danger-400',
+    info: 'bg-primary-100 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400',
+    gray: 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300',
   };
   return (
     <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', variants[variant], className)} {...props}>
@@ -141,7 +141,7 @@ export const Badge = ({ children, variant = 'default', className, ...props }: HT
 export const Spinner = ({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) => {
   const sizes = { sm: 'w-4 h-4', md: 'w-6 h-6', lg: 'w-8 h-8' };
   return (
-    <svg className={cn('animate-spin text-primary-600', sizes[size], className)} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" role="status" aria-label="Loading">
+    <svg className={cn('animate-spin text-primary-600 dark:text-primary-400', sizes[size], className)} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" role="status" aria-label="Loading">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
@@ -171,12 +171,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby={title ? 'modal-title' : undefined}>
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="fixed inset-0 bg-gray-900/50 transition-opacity" onClick={onClose} aria-hidden="true" />
-        <div className={cn('relative w-full bg-white rounded-xl shadow-xl transform transition-all', sizes[size])}>
+        <div className="fixed inset-0 bg-gray-900/50 dark:bg-black/70 transition-opacity" onClick={onClose} aria-hidden="true" />
+        <div className={cn('relative w-full bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-slate-800 transform transition-all', sizes[size])}>
           {title && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 id="modal-title" className="text-lg font-semibold text-gray-900">{title}</h2>
-              <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Close">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-800">
+              <h2 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
+              <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" aria-label="Close">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>

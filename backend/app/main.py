@@ -11,7 +11,7 @@ from app.core.database import engine
 from app.core.logging import get_logger, logger
 from app.core.rate_limit import limiter
 from app.models.entities import Base
-from app.api.routes import auth, scans, users, dashboard, reports, products, audit_logs, violations
+from app.api.routes import auth, scans, users, dashboard, reports, products, audit_logs, violations, feedback
 
 
 @asynccontextmanager
@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(products.router, prefix=settings.API_V1_PREFIX)
     app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
     app.include_router(audit_logs.router, prefix=settings.API_V1_PREFIX)
+    app.include_router(feedback.router, prefix=settings.API_V1_PREFIX)
 
     # Health check
     @app.get("/health")

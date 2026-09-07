@@ -5,9 +5,9 @@ import type { ScanDetail } from '../services/apiTypes';
 import {
   FileText, CheckCircle, AlertTriangle, XCircle, Download, RotateCw, RefreshCw, Trash2,
   MoreHorizontal, ChevronDown, ChevronUp, Info, AlertCircle, DollarSign, Scale, Factory,
-  Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target
+  Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target, Image
 } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Dropdown, Alert } from '../components/UI';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Dropdown, Alert, Modal } from '../components/UI';
 import { formatRelativeTime, formatDate, getSeverityColor, formatFileSize, cn, getStatusColor, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -40,6 +40,8 @@ export function ScanDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showRawOcr, setShowRawOcr] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
   const fetchScan = async (showLoading = true) => {
     if (!id) return;
@@ -55,6 +57,26 @@ export function ScanDetail() {
   };
 
   useEffect(() => { fetchScan(true); }, [id]);
+
+  useEffect(() => {
+    if (!scan?.id) return;
+    let active = true;
+    let url: string | null = null;
+
+    scansApi.download(scan.id)
+      .then(res => {
+        if (!active) return;
+        const blob = new Blob([res.data], { type: scan.content_type || 'image/jpeg' });
+        url = URL.createObjectURL(blob);
+        setImageUrl(url);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [scan?.id]);
 
   useEffect(() => {
     if (!scan || scan.status === 'completed' || scan.status === 'failed') return;
@@ -151,7 +173,26 @@ export function ScanDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{scan.original_filename}</h1>
           <p className="text-gray-500">{formatFileSize(scan.file_size_bytes)} • {scan.content_type} • {formatRelativeTime(scan.created_at)}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          {/* Small Tested Label Photo Box */}
+          <div
+            onClick={() => setIsPhotoModalOpen(true)}
+            className="flex items-center gap-2.5 px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 rounded-lg shadow-sm cursor-pointer transition-all group"
+            title="Click to view full tested label photo"
+          >
+            <div className="w-8 h-8 rounded overflow-hidden bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-slate-700">
+              {imageUrl ? (
+                <img src={imageUrl} alt="Tested Label" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              ) : (
+                <Image className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+              )}
+            </div>
+            <div className="text-xs">
+              <p className="font-semibold text-gray-900 dark:text-slate-100 group-hover:text-primary-600 dark:group-hover:text-primary-400">Label Photo</p>
+              <p className="text-[10px] text-gray-500 dark:text-slate-400">Click to view</p>
+            </div>
+          </div>
+
           <Button variant="outline" onClick={downloadFile}>
             <Download className="w-4 h-4 mr-1" /> Download
           </Button>
@@ -251,25 +292,25 @@ export function ScanDetail() {
             ) : (
               <div className="space-y-3">
                 {violations.map(v => (
-                  <div key={v.id} className={cn('p-4 border rounded-lg', v.status === 'pass' ? 'border-success-200 bg-success-50' : v.status === 'minor' ? 'border-warning-200 bg-warning-50' : 'border-danger-200 bg-danger-50')}>
+                  <div key={v.id} className={cn('p-4 border rounded-lg transition-colors', v.status === 'pass' ? 'border-success-200 dark:border-success-800/60 bg-success-50 dark:bg-success-950/40' : v.status === 'minor' ? 'border-warning-200 dark:border-warning-800/60 bg-warning-50 dark:bg-warning-950/40' : 'border-danger-200 dark:border-danger-800/60 bg-danger-50 dark:bg-danger-950/40')}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          {FIELD_ICONS[v.field_key] && <span className="text-gray-400">{FIELD_ICONS[v.field_key]}</span>}
-                          <span className="font-medium text-gray-900">{v.label}</span>
+                          {FIELD_ICONS[v.field_key] && <span className="text-gray-400 dark:text-slate-400">{FIELD_ICONS[v.field_key]}</span>}
+                          <span className="font-semibold text-gray-900 dark:text-slate-100">{v.label}</span>
                           <Badge variant={v.status === 'pass' ? 'success' : v.status === 'minor' ? 'warning' : 'danger'}>
                             {v.status.toUpperCase()}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{v.message}</p>
+                        <p className="text-sm text-gray-700 dark:text-slate-300 mb-2">{v.message}</p>
                         <div className="flex flex-wrap gap-2 text-xs">
                           {v.extracted_value && (
-                            <span className="px-2 py-0.5 bg-gray-100 rounded font-mono">
+                            <span className="px-2 py-0.5 bg-white/60 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-gray-800 dark:text-slate-200">
                               Extracted: {v.extracted_value}
                             </span>
                           )}
                           {v.evidence && (
-                            <span className="px-2 py-0.5 bg-gray-100 rounded font-mono truncate max-w-xs">
+                            <span className="px-2 py-0.5 bg-white/60 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-gray-800 dark:text-slate-200 truncate max-w-xs">
                               Evidence: {v.evidence}
                             </span>
                           )}
@@ -370,6 +411,30 @@ export function ScanDetail() {
           </CardContent>
         </Card>
       )}
+      {/* Photo Viewer Modal */}
+      <Modal isOpen={isPhotoModalOpen} onClose={() => setIsPhotoModalOpen(false)} title={`Tested Label Photo: ${scan.original_filename}`} size="xl">
+        <div className="space-y-4">
+          <div className="max-h-[70vh] overflow-auto flex items-center justify-center bg-gray-950 rounded-xl p-2 border border-gray-800">
+            {imageUrl ? (
+              <img src={imageUrl} alt={scan.original_filename} className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-lg" />
+            ) : (
+              <div className="py-12 text-gray-400 flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                <span>Loading label photo...</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              File: <span className="font-mono text-gray-700 dark:text-slate-300">{scan.original_filename}</span> • {formatFileSize(scan.file_size_bytes)}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setIsPhotoModalOpen(false)}>Close</Button>
+              <Button onClick={downloadFile}><Download className="w-4 h-4 mr-1" /> Download File</Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -293,5 +293,26 @@ class StatsSummary(BaseModel):
     admin_count: int
 
 
+# ---------------------------------------------------------------------------
+# Feedback
+# ---------------------------------------------------------------------------
+class FeedbackCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    category: str = Field(default="general", max_length=50)
+    comments: str | None = Field(default=None, max_length=2000)
+
+
+class FeedbackRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int | None = None
+    rating: int
+    category: str
+    comments: str | None = None
+    created_at: datetime
+    user: UserRead | None = None
+
+
 # Ensure ScanDetail definition completes after ViolationRead/ReportRead
 ScanDetail.model_rebuild()

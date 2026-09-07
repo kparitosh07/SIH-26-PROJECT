@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useNavigate } from 'react-router-dom';
 import { scansApi } from '../services/api';
 import type { Product } from '../services/apiTypes';
-import { Upload, FileText, Loader2, CheckCircle, XCircle, Image, AlertCircle, ChevronDown } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Alert } from '../components/UI';
+import { Upload, FileText, Loader2, CheckCircle, XCircle, Image, AlertCircle, ChevronDown, Camera } from 'lucide-react';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Alert, Modal } from '../components/UI';
 import { formatFileSize, cn, getErrorMessage } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -28,6 +28,68 @@ export function ScanUpload() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+
+  // Camera state
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+    setCameraLoading(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      toast.error('Unable to access camera. Please check camera permissions.');
+      setIsCameraOpen(false);
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraOpen(false);
+  }, []);
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        if (!blob) return;
+        const file = new File([blob], `label_photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const id = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const preview = URL.createObjectURL(file);
+        setFiles(prev => [...prev, { file, id, preview, status: 'pending', progress: 0 }]);
+        toast.success('Photo captured and added to upload queue');
+        stopCamera();
+      }, 'image/jpeg', 0.92);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // Dropzone
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -172,15 +234,54 @@ export function ScanUpload() {
               <p className="text-sm text-gray-500 mt-1">
                 Supports: PNG, JPG, WebP, BMP, PDF &bull; Max 20MB each
               </p>
-              <div className="mt-4">
-                <Button variant="outline" onClick={open}>
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <Button variant="outline" onClick={(e) => { e.stopPropagation(); open(); }}>
                   Browse Files
+                </Button>
+                <Button onClick={(e) => { e.stopPropagation(); startCamera(); }} className="flex items-center gap-2">
+                  <Camera className="w-4 h-4" /> Use Camera
                 </Button>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Camera Modal */}
+      <Modal isOpen={isCameraOpen} onClose={stopCamera} title="Scan Label with Camera" size="lg">
+        <div className="space-y-4">
+          <div className="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+            {cameraLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 text-white z-10">
+                <Loader2 className="w-8 h-8 animate-spin mr-2" /> Starting camera...
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onLoadedMetadata={() => videoRef.current?.play()}
+              className="w-full h-full object-cover"
+            />
+            {/* Guide overlay */}
+            <div className="absolute inset-8 border-2 border-dashed border-white/60 rounded-lg pointer-events-none flex items-center justify-center">
+              <span className="text-xs text-white/90 bg-black/60 px-3 py-1 rounded-full">
+                Align product label within frame
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={stopCamera}>
+              Cancel
+            </Button>
+            <Button onClick={capturePhoto} className="flex items-center gap-2">
+              <Camera className="w-4 h-4" /> Capture Photo
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* File List */}
       {files.length > 0 && (

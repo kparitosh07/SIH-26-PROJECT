@@ -163,4 +163,12 @@ export const auditApi = {
   stats: () => api.get<ApiResponse<any>>('/audit-logs/stats/summary'),
 };
 
+// Feedback
+export const feedbackApi = {
+  submit: (data: { rating: number; category?: string; comments?: string }) =>
+    api.post<ApiResponse<any>>('/feedback', data),
+  list: (params?: { page?: number; page_size?: number }) =>
+    api.get<ApiResponse<any>>('/feedback', { params }),
+};
+
 export default api;
