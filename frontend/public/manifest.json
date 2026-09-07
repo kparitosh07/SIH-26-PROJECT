@@ -1,0 +1,19 @@
+{
+  "short_name": "मानक",
+  "name": "मानक - Legal Packaging Compliance Checker",
+  "description": "AI-Powered Packaging Compliance & Legal Metrology Verification System",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#0284c7",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/"
+}
