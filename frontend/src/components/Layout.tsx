@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { cn } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Upload, History, FileText, Users, Settings, LogOut, X, ChevronRight,
-  ShieldCheck, BarChart3, Star, Sun, Moon
+  ShieldCheck, BarChart3, Star
 } from 'lucide-react';
 import { FeedbackModal } from './FeedbackModal';
-import { useTheme } from '../context/ThemeContext';
+import { GovHeader } from './GovHeader';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -136,92 +136,31 @@ export function Sidebar({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
               <span>Sign out</span>
             </button>
           )}
-        </div>
-      </div>
-    </aside>
-  );
-}
 
-export function Header({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
-  const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const location = useLocation();
-
-  const getPageTitle = () => {
-    const path = location.pathname;
-    if (path === '/dashboard') return 'Dashboard';
-    if (path === '/scan') return 'Scan Label';
-    if (path.startsWith('/scan/')) return 'Scan Details';
-    if (path === '/history') return 'Scan History';
-    if (path === '/reports') return 'Reports';
-    if (path === '/analytics') return 'Analytics';
-    if (path.startsWith('/admin/users')) return 'User Management';
-    if (path.startsWith('/admin/audit')) return 'Audit Logs';
-    if (path.startsWith('/admin/settings')) return 'Settings';
-    return 'Label Compliance Checker';
-  };
-
-  return (
-    <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-slate-800 transition-colors">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{getPageTitle()}</h1>
-        <div className="flex items-center gap-3">
-          {/* Segmented Theme Switcher */}
-          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-lg border border-gray-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setTheme('light')}
-              className={cn(
-                'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer',
-                theme === 'light'
-                  ? 'bg-white text-amber-600 shadow-sm font-semibold'
-                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
-              )}
-              title="Switch to Light Theme"
-              aria-label="Light Mode"
-            >
-              <Sun className="w-3.5 h-3.5" />
-              <span>Light</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTheme('dark')}
-              className={cn(
-                'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer',
-                theme === 'dark'
-                  ? 'bg-slate-900 text-slate-100 shadow-sm font-semibold'
-                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
-              )}
-              title="Switch to Dark Theme"
-              aria-label="Dark Mode"
-            >
-              <Moon className="w-3.5 h-3.5" />
-              <span>Dark</span>
-            </button>
-          </div>
-          {onOpenFeedback && (
-            <button
-              onClick={onOpenFeedback}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/60 rounded-lg transition-colors"
-              title="Rate this App & Send Feedback"
-            >
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="hidden sm:inline">Rate App</span>
-            </button>
-          )}
-          {user && (
-            <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50">
-              <span className="text-sm text-gray-600 capitalize">{user.role}</span>
-              <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-xs font-medium text-primary-700">
-                  {user.full_name.charAt(0).toUpperCase()}
-                </span>
+          {/* Government Slogan Badge */}
+          {!collapsed && (
+            <div className="pt-3 border-t border-gray-200 dark:border-slate-800 text-center">
+              <div className="flex items-center justify-center mb-1 text-amber-700 dark:text-amber-400">
+                <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="6" fill="none" />
+                  <circle cx="50" cy="50" r="8" fill="currentColor" />
+                  <line x1="50" y1="8" x2="50" y2="92" stroke="currentColor" strokeWidth="3" />
+                  <line x1="8" y1="50" x2="92" y2="50" stroke="currentColor" strokeWidth="3" />
+                  <line x1="20" y1="20" x2="80" y2="80" stroke="currentColor" strokeWidth="3" />
+                  <line x1="20" y1="80" x2="80" y2="20" stroke="currentColor" strokeWidth="3" />
+                </svg>
               </div>
+              <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                सबका साथ, सबका विकास,<br />सबका विश्वास, सबका प्रयास
+              </p>
+              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                Government of India Initiative
+              </p>
             </div>
           )}
         </div>
       </div>
-    </header>
+    </aside>
   );
 }
 
@@ -233,7 +172,7 @@ export function Layout() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-200">
       <Sidebar onOpenFeedback={() => setIsFeedbackOpen(true)} />
       <div className={cn('transition-all duration-300', 'lg:ml-64')}>
-        <Header onOpenFeedback={() => setIsFeedbackOpen(true)} />
+        <GovHeader onOpenFeedback={() => setIsFeedbackOpen(true)} />
         <main className="p-4 sm:p-6 lg:p-8"><Outlet /></main>
       </div>
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />

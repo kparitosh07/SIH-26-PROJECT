@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   FileText, CheckCircle, AlertTriangle, Clock, RefreshCw,
-  BarChart3, PieChart, Activity, Target
+  BarChart3, PieChart, Activity, Target, Leaf, ArrowRight, BookOpen, Upload, Shield
 } from 'lucide-react';
 import { dashboardApi, scansApi } from '../services/api';
 import type { DashboardResponse, Scan } from '../services/apiTypes';
@@ -12,6 +14,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,10 +41,10 @@ export function Dashboard() {
   useEffect(() => { fetchData(); }, [timeRange]);
 
   const stats = [
-    { label: 'Total Scans', value: data?.overview.total_scans ?? 0, icon: FileText, color: 'text-primary-600', bg: 'bg-primary-100' },
-    { label: 'Completed', value: data?.overview.completed_scans ?? 0, icon: CheckCircle, color: 'text-success-600', bg: 'bg-success-100' },
-    { label: 'Failed', value: data?.overview.fail_scans ?? 0, icon: AlertTriangle, color: 'text-danger-600', bg: 'bg-danger-100' },
-    { label: 'Pass Rate', value: `${data?.overview.pass_rate ?? 0}%`, icon: Target, color: 'text-primary-600', bg: 'bg-primary-100' },
+    { label: 'Total Scans', value: data?.overview.total_scans ?? 0, icon: FileText, color: 'text-sky-600', bg: 'bg-sky-100' },
+    { label: 'Completed', value: data?.overview.completed_scans ?? 0, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    { label: 'Failed', value: data?.overview.fail_scans ?? 0, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-100' },
+    { label: 'Pass Rate', value: `${data?.overview.pass_rate ?? 0}%`, icon: Target, color: 'text-indigo-600', bg: 'bg-indigo-100' },
   ];
 
   if (loading) {
@@ -58,15 +62,130 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Official Welcome Hero Banner */}
+      <Card className="bg-gradient-to-r from-sky-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border-sky-100 dark:border-slate-800 overflow-hidden relative shadow-sm">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 text-xs font-semibold mb-3">
+                <Shield className="w-3.5 h-3.5 text-sky-600" />
+                Ministry of Consumer Affairs &bull; Official Compliance Portal
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                Welcome, {user?.full_name || 'Inspector'}
+              </h1>
+              <p className="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base mt-1">
+                Together for a Safer, Healthier and Greener India
+              </p>
+            </div>
+
+            {/* Right Badge Graphic (India Gate + Swachh Slogan) */}
+            <div className="flex items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 rounded-xl border border-sky-100 dark:border-slate-700 shadow-sm flex-shrink-0">
+              <div className="text-center">
+                <span className="block text-xs font-bold text-amber-800 dark:text-amber-400 border-b-2 border-amber-500 pb-0.5">
+                  एक कदम स्वच्छता की ओर
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                  Swachh Bharat Abhiyan
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Action Navigation Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Scan & Verify */}
+        <div
+          onClick={() => navigate('/scan')}
+          className="p-5 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <Upload className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+            Scan & Verify
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+            Check packaging compliance using AI-powered verification
+          </p>
+          <div className="flex items-center text-xs font-semibold text-sky-600 dark:text-sky-400 gap-1">
+            <span>Scan Now</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+
+        {/* Card 2: View Reports */}
+        <div
+          onClick={() => navigate('/reports')}
+          className="p-5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <FileText className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            View Reports
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+            Access and download official compliance reports
+          </p>
+          <div className="flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1">
+            <span>View Reports</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+
+        {/* Card 3: Regulatory Standards */}
+        <div
+          onClick={() => navigate('/analytics')}
+          className="p-5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+            Regulatory Standards
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+            Explore legal metrology packaging rules & guidelines
+          </p>
+          <div className="flex items-center text-xs font-semibold text-amber-600 dark:text-amber-400 gap-1">
+            <span>Explore Rules</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+
+        {/* Card 4: Submit for Review */}
+        <div
+          onClick={() => navigate('/scan')}
+          className="p-5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <Upload className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+            Submit for Review
+          </h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+            Upload packaging details for official inspection review
+          </p>
+          <div className="flex items-center text-xs font-semibold text-rose-600 dark:text-rose-400 gap-1">
+            <span>Submit Details</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500">Overview of compliance scanning activity</p>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Compliance Activity Overview</h2>
+          <p className="text-xs text-gray-500">Summary of label scans and verification metrics</p>
         </div>
         <select
           value={timeRange}
           onChange={e => setTimeRange(Number(e.target.value))}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="px-3 py-1.5 border border-gray-300 dark:border-slate-700 rounded-lg text-xs font-medium bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value={7}>Last 7 days</option>
           <option value={30}>Last 30 days</option>
@@ -303,6 +422,27 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sustainable Packaging Footer Banner */}
+      <div className="p-5 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Leaf className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+              Sustainable Packaging for a Better Tomorrow
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Comply Today, Contribute to a Healthier and Cleaner India
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/60 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+          <span>#GoGreen</span>
+          <span>#ReducePlastic</span>
+        </div>
+      </div>
     </div>
   );
 }
