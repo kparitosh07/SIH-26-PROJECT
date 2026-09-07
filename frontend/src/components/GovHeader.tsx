@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -48,9 +47,6 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('Home');
-
-  const navItems = ['Home', 'About', 'Guidelines', 'Resources', 'Contact Us'];
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -80,15 +76,15 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs font-extrabold tracking-wider text-amber-800 dark:text-amber-400 uppercase truncate">
+              <span className="text-[11px] sm:text-xs font-black tracking-wider text-amber-900 dark:text-amber-400 uppercase truncate">
                 भारत सरकार / GOVERNMENT OF INDIA
               </span>
             </div>
-            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-tight mt-0.5 truncate">
+            <h1 className="text-lg sm:text-2xl font-black text-slate-950 dark:text-slate-100 tracking-tight leading-tight mt-0.5 truncate">
               Packaging Compliance Checker
             </h1>
-            <p className="text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 truncate">
-              Ensuring Safe, Compliant and Sustainable Packaging &bull; <span className="text-slate-500 dark:text-slate-400">Ministry of Consumer Affairs, Food & Public Distribution</span>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-300 mt-0.5 truncate">
+              Ensuring Safe, Compliant and Sustainable Packaging &bull; <span className="text-slate-700 dark:text-slate-400 font-medium">Ministry of Consumer Affairs, Food & Public Distribution</span>
             </p>
           </div>
         </div>
@@ -96,23 +92,23 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
         {/* Right: National Initiative Badges (Digital India & Swachh Bharat) */}
         <div className="hidden xl:flex items-center gap-4 flex-shrink-0">
           {/* Digital India Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 shadow-2xs">
             <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 via-sky-500 to-emerald-500 flex items-center justify-center text-white font-black text-[10px] shadow-sm">
               DI
             </div>
             <div className="text-left">
-              <span className="block text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">
+              <span className="block text-xs font-black text-slate-950 dark:text-slate-100 tracking-tight leading-none">
                 Digital India
               </span>
-              <span className="text-[9px] font-semibold text-sky-600 dark:text-sky-400">
+              <span className="text-[9px] font-bold text-sky-700 dark:text-sky-400">
                 Power To Empower
               </span>
             </div>
           </div>
 
           {/* Swachh Bharat Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
-            <div className="flex items-center text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-emerald-100/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 shadow-2xs">
+            <div className="flex items-center text-emerald-800 dark:text-emerald-400">
               <svg width="26" height="15" viewBox="0 0 32 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="8" cy="9" r="6" stroke="currentColor" strokeWidth="2" fill="none" />
                 <circle cx="24" cy="9" r="6" stroke="currentColor" strokeWidth="2" fill="none" />
@@ -121,10 +117,10 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
               </svg>
             </div>
             <div className="text-left">
-              <span className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 leading-none">
+              <span className="block text-xs font-extrabold text-emerald-950 dark:text-emerald-300 leading-none">
                 स्वच्छ भारत
               </span>
-              <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-400">
                 स्वस्थ भारत
               </span>
             </div>
@@ -135,23 +131,12 @@ export function GovHeader({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
       {/* Main Government Portal Navigation Bar */}
       <div className="bg-slate-900 dark:bg-slate-950 text-white border-t border-slate-800 shadow-md">
         <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-12 gap-4">
-          {/* Left: Nav Tabs */}
-          <nav className="flex items-center space-x-1 overflow-x-auto scrollbar-none py-1">
-            {navItems.map((item) => (
-              <button
-                key={item}
-                onClick={() => setActiveTab(item)}
-                className={cn(
-                  'px-3 py-1 text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap',
-                  activeTab === item
-                    ? 'bg-sky-700 text-white font-semibold shadow-xs'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                )}
-              >
-                {item}
-              </button>
-            ))}
-          </nav>
+          {/* Left: Active Section Title */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold tracking-wide text-sky-400 uppercase">
+              {getPageTitle()}
+            </span>
+          </div>
 
           {/* Right Header Controls & User Badge */}
           <div className="flex items-center gap-3 flex-shrink-0">

@@ -63,29 +63,29 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Official Welcome Hero Banner */}
-      <Card className="bg-gradient-to-r from-sky-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850 border-sky-100 dark:border-slate-800 overflow-hidden relative shadow-sm">
+      <Card className="bg-white border-2 border-sky-200 dark:bg-slate-900 dark:border-slate-800 overflow-hidden relative shadow-sm">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 text-xs font-semibold mb-3">
-                <Shield className="w-3.5 h-3.5 text-sky-600" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 text-xs font-bold mb-3 border border-sky-200 dark:border-sky-800">
+                <Shield className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" />
                 Ministry of Consumer Affairs &bull; Official Compliance Portal
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-slate-100 tracking-tight">
                 Welcome, {user?.full_name || 'Inspector'}
               </h1>
-              <p className="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base mt-1">
+              <p className="text-slate-800 dark:text-slate-200 font-semibold text-sm sm:text-base mt-1">
                 Together for a Safer, Healthier and Greener India
               </p>
             </div>
 
             {/* Right Badge Graphic (India Gate + Swachh Slogan) */}
-            <div className="flex items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 rounded-xl border border-sky-100 dark:border-slate-700 shadow-sm flex-shrink-0">
+            <div className="flex items-center gap-4 bg-amber-50 dark:bg-slate-800 p-4 rounded-xl border-2 border-amber-200 dark:border-slate-700 shadow-xs flex-shrink-0">
               <div className="text-center">
-                <span className="block text-xs font-bold text-amber-800 dark:text-amber-400 border-b-2 border-amber-500 pb-0.5">
+                <span className="block text-xs font-black text-amber-950 dark:text-amber-400 border-b-2 border-amber-500 pb-0.5">
                   एक कदम स्वच्छता की ओर
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-400 mt-1 block">
                   Swachh Bharat Abhiyan
                 </span>
               </div>
@@ -99,18 +99,18 @@ export function Dashboard() {
         {/* Card 1: Scan & Verify */}
         <div
           onClick={() => navigate('/scan')}
-          className="p-5 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 hover:shadow-md transition-all cursor-pointer group"
+          className="p-5 rounded-xl bg-white dark:bg-sky-950/30 border-2 border-sky-200 dark:border-sky-800/50 hover:border-sky-500 dark:hover:border-sky-500 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <div className="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
             <Upload className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+          <h3 className="font-extrabold text-slate-950 dark:text-slate-100 group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors">
             Scan & Verify
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1 mb-3">
             Check packaging compliance using AI-powered verification
           </p>
-          <div className="flex items-center text-xs font-semibold text-sky-600 dark:text-sky-400 gap-1">
+          <div className="flex items-center text-xs font-extrabold text-sky-700 dark:text-sky-400 gap-1">
             <span>Scan Now</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
@@ -119,18 +119,18 @@ export function Dashboard() {
         {/* Card 2: View Reports */}
         <div
           onClick={() => navigate('/reports')}
-          className="p-5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-md transition-all cursor-pointer group"
+          className="p-5 rounded-xl bg-white dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
             <FileText className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+          <h3 className="font-extrabold text-slate-950 dark:text-slate-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
             View Reports
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1 mb-3">
             Access and download official compliance reports
           </p>
-          <div className="flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1">
+          <div className="flex items-center text-xs font-extrabold text-emerald-700 dark:text-emerald-400 gap-1">
             <span>View Reports</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
@@ -139,18 +139,18 @@ export function Dashboard() {
         {/* Card 3: Regulatory Standards */}
         <div
           onClick={() => navigate('/analytics')}
-          className="p-5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 hover:shadow-md transition-all cursor-pointer group"
+          className="p-5 rounded-xl bg-white dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-800/50 hover:border-amber-500 dark:hover:border-amber-500 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <div className="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
             <BookOpen className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+          <h3 className="font-extrabold text-slate-950 dark:text-slate-100 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
             Regulatory Standards
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1 mb-3">
             Explore legal metrology packaging rules & guidelines
           </p>
-          <div className="flex items-center text-xs font-semibold text-amber-600 dark:text-amber-400 gap-1">
+          <div className="flex items-center text-xs font-extrabold text-amber-700 dark:text-amber-400 gap-1">
             <span>Explore Rules</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
@@ -159,18 +159,18 @@ export function Dashboard() {
         {/* Card 4: Submit for Review */}
         <div
           onClick={() => navigate('/scan')}
-          className="p-5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 hover:shadow-md transition-all cursor-pointer group"
+          className="p-5 rounded-xl bg-white dark:bg-rose-950/30 border-2 border-rose-200 dark:border-rose-800/50 hover:border-rose-500 dark:hover:border-rose-500 shadow-xs hover:shadow-md transition-all cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <div className="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
             <Upload className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+          <h3 className="font-extrabold text-slate-950 dark:text-slate-100 group-hover:text-rose-700 dark:group-hover:text-rose-400 transition-colors">
             Submit for Review
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1 mb-3">
             Upload packaging details for official inspection review
           </p>
-          <div className="flex items-center text-xs font-semibold text-rose-600 dark:text-rose-400 gap-1">
+          <div className="flex items-center text-xs font-extrabold text-rose-700 dark:text-rose-400 gap-1">
             <span>Submit Details</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>

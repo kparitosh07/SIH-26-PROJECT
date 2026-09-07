@@ -99,11 +99,14 @@ export function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-4 shadow-md">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Label Compliance Checker</h1>
-          <p className="text-gray-500 mt-1">Create your account</p>
+          <div className="text-amber-800 dark:text-amber-400 font-extrabold text-2xl tracking-widest font-serif mb-0.5">
+            मानक
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Label Compliance Checker</h1>
+          <p className="text-gray-500 dark:text-slate-400 mt-1">Create your account</p>
         </div>
 
         <Card>

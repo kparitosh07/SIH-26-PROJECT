@@ -39,7 +39,7 @@ export function Sidebar({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
               <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-slate-100">LabelCheck</span>
+              <span className="font-extrabold text-xl text-slate-900 dark:text-slate-100 tracking-wide font-serif">मानक</span>
             </div>
           )}
           <button

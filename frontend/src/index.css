@@ -116,24 +116,32 @@ html:not(.dark) h4,
 html:not(.dark) h5,
 html:not(.dark) h6,
 html:not(.dark) .text-gray-900,
-html:not(.dark) .text-gray-800 {
+html:not(.dark) .text-gray-800,
+html:not(.dark) .text-slate-900,
+html:not(.dark) .text-slate-800 {
   color: #0f172a !important;
 }
 
 html:not(.dark) .text-gray-700,
-html:not(.dark) .text-gray-600 {
-  color: #334155 !important;
+html:not(.dark) .text-gray-600,
+html:not(.dark) .text-slate-700,
+html:not(.dark) .text-slate-600 {
+  color: #1e293b !important;
 }
 
 html:not(.dark) .text-gray-500,
-html:not(.dark) .text-gray-400 {
-  color: #64748b !important;
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-slate-500,
+html:not(.dark) .text-slate-400 {
+  color: #334155 !important;
 }
 
 html:not(.dark) .border-gray-100,
 html:not(.dark) .border-gray-200,
-html:not(.dark) .border-gray-300 {
-  border-color: #e2e8f0 !important;
+html:not(.dark) .border-gray-300,
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-slate-300 {
+  border-color: #cbd5e1 !important;
 }
 
 html:not(.dark) select,
