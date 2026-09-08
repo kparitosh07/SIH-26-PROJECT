@@ -168,6 +168,9 @@ class ScanDetail(ScanRead):
     ocr_latency_ms: int | None = None
     violations: list["ViolationRead"] = []
     report: "ReportRead | None" = None
+    # Reference MPE (First Schedule, Table I/II) computed from the declared net
+    # quantity; informational only — actual MPE compliance needs weighing.
+    max_permissible_errors: list[dict[str, Any]] | None = None
 
 
 class ScanActionRequest(BaseModel):

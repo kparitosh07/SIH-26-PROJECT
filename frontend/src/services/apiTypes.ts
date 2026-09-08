@@ -44,6 +44,15 @@ export interface ScanDetail extends Scan {
   ocr_latency_ms: number | null;
   violations: Violation[];
   report: Report | null;
+  max_permissible_errors: MaxPermissibleError[] | null;
+}
+
+export interface MaxPermissibleError {
+  basis: string;
+  declared_quantity?: string;
+  max_permissible_error: number | string;
+  unit?: string;
+  note?: string;
 }
 
 export interface Violation {

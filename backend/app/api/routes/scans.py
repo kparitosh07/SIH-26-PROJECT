@@ -17,6 +17,7 @@ from app.core.rate_limit import limiter
 from app.models.entities import Scan, ScanStatus, ScanSeverity, Violation, UserRole
 from app.schemas.schemas import ApiResponse, Paginated, ScanActionRequest, ScanDetail, ScanRead
 from app.services.audit import log_action
+from app.services.rule_engine import compute_mpe_report
 from app.services.storage import get_storage
 from app.tasks.scan_tasks import process_scan_task, run_scan_processing
 
@@ -169,6 +170,8 @@ def get_scan(scan_id: int, db: Session = Depends(get_db), user = Depends(get_cur
     violations = db.query(Violation).filter(Violation.scan_id == scan_id).all()
     scan_detail = ScanDetail.model_validate(scan)
     scan_detail.violations = [v for v in violations]
+    net_qty = (scan.extracted_fields or {}).get("net_quantity") if isinstance(scan.extracted_fields, dict) else None
+    scan_detail.max_permissible_errors = compute_mpe_report(net_qty)
     return ApiResponse(data=scan_detail)
 
 

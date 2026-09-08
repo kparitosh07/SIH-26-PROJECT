@@ -5,7 +5,8 @@ import type { ScanDetail } from '../services/apiTypes';
 import {
   FileText, CheckCircle, AlertTriangle, XCircle, Download, RotateCw, RefreshCw, Trash2,
   MoreHorizontal, ChevronDown, ChevronUp, Info, AlertCircle, DollarSign, Scale, Factory,
-  Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target, Image
+  Calendar, Phone, MapPin, BadgePercent, Hash, Loader2, Target, Image, Tag, CalendarClock,
+  ClipboardList
 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Dropdown, Alert, Modal } from '../components/UI';
 import { formatRelativeTime, formatDate, getSeverityColor, formatFileSize, cn, getStatusColor, getErrorMessage } from '../utils/helpers';
@@ -20,6 +21,8 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
   address: <MapPin className="w-4 h-4" />,
   fssai: <BadgePercent className="w-4 h-4" />,
   batch_number: <Hash className="w-4 h-4" />,
+  commodity_name: <Tag className="w-4 h-4" />,
+  mfg_date: <CalendarClock className="w-4 h-4" />,
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -31,7 +34,25 @@ const FIELD_LABELS: Record<string, string> = {
   address: 'Packaged / Registered Office Address',
   fssai: 'FSSAI License Number',
   batch_number: 'Batch / Lot Number',
+  commodity_name: 'Common / Generic Commodity Name',
+  mfg_date: 'Manufactured / Pre-packed Month & Year',
 };
+
+const SEVERITY_ORDER = { critical: 0, major: 1, minor: 2, pass: 3 };
+
+// Mandatory declarations required by Rule 6 "Declarations to be made on every
+// package" (LMPC Rules 2011).
+const CHECKLIST_ITEMS: { label: string; rule: string; keys: string[]; icon: React.ReactNode }[] = [
+  { label: FIELD_LABELS.mrp, rule: 'Rule 6(1)(e) — Retail sale price inclusive of all taxes', keys: ['mrp'], icon: <DollarSign className="w-4 h-4" /> },
+  { label: FIELD_LABELS.net_quantity, rule: 'Rule 6(1)(c) — Net quantity in a standard unit', keys: ['net_quantity'], icon: <Scale className="w-4 h-4" /> },
+  { label: FIELD_LABELS.mfg_date, rule: 'Rule 6(1)(d) — Month & year of manufacture / pre-packing', keys: ['mfg_date'], icon: <CalendarClock className="w-4 h-4" /> },
+  { label: FIELD_LABELS.commodity_name, rule: 'Rule 6(1)(b) — Common / generic commodity name', keys: ['commodity_name'], icon: <Tag className="w-4 h-4" /> },
+  { label: FIELD_LABELS.manufacturer, rule: 'Rule 6(1)(a) — Name & address of manufacturer / packer', keys: ['manufacturer', 'address'], icon: <Factory className="w-4 h-4" /> },
+  { label: FIELD_LABELS.customer_care, rule: 'Rule 6(2) — Consumer complaints contact', keys: ['customer_care'], icon: <Phone className="w-4 h-4" /> },
+  { label: FIELD_LABELS.dates, rule: 'Rule 6 — Best before / use before declaration (food)', keys: ['dates'], icon: <Calendar className="w-4 h-4" /> },
+  { label: FIELD_LABELS.batch_number, rule: 'Rule 6 — Batch / lot identification', keys: ['batch_number'], icon: <Hash className="w-4 h-4" /> },
+  { label: FIELD_LABELS.fssai, rule: 'Rule 6 — FSSAI license (food articles)', keys: ['fssai'], icon: <BadgePercent className="w-4 h-4" /> },
+];
 
 export function ScanDetail() {
   const { id } = useParams<{ id: string }>();
@@ -265,6 +286,45 @@ export function ScanDetail() {
         </Card>
       </div>
 
+      {/* Mandatory Declarations Checklist — Rule 6, LMPC Rules 2011 */}
+      {scan.status === 'completed' && violations.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              Mandatory Declarations Checklist
+            </CardTitle>
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+              Rule 6 « Declarations to be made on every package »
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {CHECKLIST_ITEMS.map(item => {
+                const found = violations.filter(v => item.keys.includes(v.field_key));
+                const worst = found
+                  .filter(v => v.status !== 'pass')
+                  .sort((a, b) => (SEVERITY_ORDER as any)[a.status] - (SEVERITY_ORDER as any)[b.status])[0]
+                  || found.find(v => v.status === 'pass');
+                const missing = !worst;
+                return (
+                  <div key={item.label} className={cn('p-3 border rounded-lg flex items-start gap-3', missing ? 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40' : worst.status === 'pass' ? 'border-success-200 dark:border-success-800/60 bg-success-50 dark:bg-success-950/40' : 'border-warning-200 dark:border-warning-800/60 bg-warning-50 dark:bg-warning-950/40')}>
+                    <span className="text-gray-400 dark:text-slate-400 mt-0.5 flex-shrink-0">{item.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100 leading-tight">{item.label}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-1.5 mt-0.5">{item.rule}</p>
+                      <Badge variant={missing ? 'gray' : worst.status === 'pass' ? 'success' : worst.status === 'minor' ? 'warning' : 'danger'}>
+                        {missing ? 'NOT DETECTED' : worst.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {scan.error_message && (
         <Alert variant="danger" className="flex items-start gap-3">
           <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
@@ -273,6 +333,37 @@ export function ScanDetail() {
             <p className="text-sm mt-1 font-mono text-xs">{scan.error_message}</p>
           </div>
         </Alert>
+      )}
+
+      {/* Maximum Permissible Error reference (First Schedule) */}
+      {scan.max_permissible_errors && scan.max_permissible_errors.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Scale className="w-5 h-5" />
+              Maximum Permissible Error (Reference)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {scan.max_permissible_errors.map((mpe, i) => (
+                <div key={i} className="p-3 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800/60">
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{mpe.basis}</p>
+                  {mpe.declared_quantity && (
+                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Declared: {mpe.declared_quantity}</p>
+                  )}
+                  <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                    ±{mpe.max_permissible_error}{mpe.unit ? ` ${mpe.unit}` : ''}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{mpe.note}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-3">
+              Reference values per Rule 2(e) and the First Schedule. Actual compliance requires weighing the package.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Violations & Extracted Fields */}

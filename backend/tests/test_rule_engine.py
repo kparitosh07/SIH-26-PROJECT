@@ -9,9 +9,11 @@ class TestRuleEngine:
     def test_compliant_label(self):
         """A fully compliant label passes all mandatory checks."""
         text = """
-        MRP: Rs. 120.00
+        Aachar Rice
+        MRP: Rs. 120.00 (INCL. OF ALL TAXES)
         NET WT. 500g
         MANUFACTURED BY: ABC Foods Pvt Ltd
+        MFG DATE: 05/2026
         BEST BEFORE: 12/2027
         CUSTOMER CARE: 1800-123-4567
         PACKED AT: Plot 42, MIDC, Pune 411045
@@ -24,6 +26,8 @@ class TestRuleEngine:
         assert report.score == 100.0
         assert report.extracted_fields["mrp"] == "120.00"
         assert report.extracted_fields["net_quantity"] == "500g"
+        assert report.extracted_fields["commodity_name"] == "Rice"
+        assert report.extracted_fields["mfg_date"] == "05/2026"
         assert "ABC Foods" in report.extracted_fields["manufacturer"]
 
     def test_empty_label_gets_all_violations(self):
@@ -97,6 +101,165 @@ class TestRuleEngine:
         report = evaluate_compliance(text)
         assert report.verdict == ScanSeverity.CRITICAL
         assert "mrp" not in report.extracted_fields
+
+    def test_mrp_without_tax_declaration_is_minor(self):
+        """Rule 6(1)(e): MRP must be declared inclusive of all taxes."""
+        text = "MRP: Rs. 99.00\nNET WT. 200 g"
+        report = evaluate_compliance(text)
+        mrp = next(r for r in report.results if r.key == "mrp")
+        assert mrp.status == ScanSeverity.MINOR
+        assert "inclusive of all taxes" in mrp.message
+
+    def test_misleading_quantity_qualifier_is_minor(self):
+        """Rule 12(6): quantity must not be qualified by 'about / minimum' etc."""
+        text = "MRP: Rs. 40.00 (INCL OF ALL TAXES)\nNET QUANTITY: about 500g"
+        report = evaluate_compliance(text)
+        qty = next(r for r in report.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+
+    def test_commodity_name_required(self):
+        """Rule 6(1)(b): common/generic name of the commodity must appear."""
+        text = """
+        MRP: Rs. 40.00 (INCL OF ALL TAXES)
+        NET WT. 1 kg
+        MANUFACTURED BY: ABC Foods Pvt Ltd
+        """
+        report = evaluate_compliance(text)
+        name = next(r for r in report.results if r.key == "commodity_name")
+        assert name.status == ScanSeverity.MAJOR
+
+    def test_mfg_month_year_detected(self):
+        """Rule 6(1)(d): month & year of manufacture/pre-packing must be stated."""
+        text = "MRP: Rs. 12.00 (INCL OF ALL TAXES)\nNET WT. 100 g\nMFG DATE: 06/2026"
+        report = evaluate_compliance(text)
+        assert report.extracted_fields["mfg_date"] == "06/2026"
+
+    def test_product_name_and_mfg_date_not_misdetected_clauses(self):
+        """'MANUFACTURED BY' / 'PACKED AT' must not satisfy mfg_date."""
+        text = """
+        MRP: Rs. 30.00 (INCL. OF ALL TAXES)
+        NET WT. 500g
+        MANUFACTURED BY: XYZ Ltd
+        PACKED AT: Pune
+        """
+        report = evaluate_compliance(text)
+        assert "mfg_date" not in report.extracted_fields
+
+    def test_standard_pack_size_ok(self):
+        """Rule 5 / Second Schedule: 1 kg rice is a standard size."""
+        text = "Rice\nMRP: Rs. 80.00 (INCL OF ALL TAXES)\nNET WT. 1 kg"
+        report = evaluate_compliance(text)
+        qty = next(r for r in report.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.PASS
+
+    def test_non_standard_pack_size_minor(self):
+        """Rule 5 / Second Schedule: 300 g rice is not a standard size."""
+        text = "Rice\nMRP: Rs. 40.00 (INCL OF ALL TAXES)\nNET WT. 300g"
+        report = evaluate_compliance(text)
+        qty = next(r for r in report.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+        assert "non-standard" in qty.message
+
+    def test_unknown_commodity_not_penalised_for_pack_size(self):
+        text = "Premium Widget\nMRP: Rs. 20.00 (INCL OF ALL TAXES)\nNET WT. 300g"
+        report = evaluate_compliance(text)
+        qty = next(r for r in report.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.PASS
+
+    def test_water_pack_sizes(self):
+        ok = evaluate_compliance("Mineral Water\nMRP: Rs. 30.00 (INCL OF ALL TAXES)\nNET QUANTITY: 2 litre")
+        qty = next(r for r in ok.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.PASS
+        bad = evaluate_compliance("Mineral Water\nMRP: Rs. 30.00 (INCL OF ALL TAXES)\nNET QUANTITY: 2.5 litre")
+        qty = next(r for r in bad.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+
+    def test_si_quantity_units_rule13(self):
+        """Rule 13(2): <1 kg -> gram, <1 L -> millilitre."""
+        bad_kg = evaluate_compliance("Rice\nMRP: Rs. 20 (INCL OF ALL TAXES)\nNET WT. 0.5 kg")
+        qty = next(r for r in bad_kg.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+        assert "Rule 13" in qty.message
+
+        bad_l = evaluate_compliance("Mineral Water\nMRP: Rs. 30 (INCL OF ALL TAXES)\nNET QUANTITY: 0.75 litre")
+        qty = next(r for r in bad_l.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+
+        ok = evaluate_compliance("Rice\nMRP: Rs. 20 (INCL OF ALL TAXES)\nNET WT. 500 g")
+        qty = next(r for r in ok.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.PASS
+
+    def test_when_packed_rule11(self):
+        """Rule 11(4): only soaps/lotions/creams may be qualified by 'when packed'."""
+        bad = evaluate_compliance("Rice\nMRP: Rs. 20 (INCL OF ALL TAXES)\nNET WT. 500 g WHEN PACKED")
+        qty = next(r for r in bad.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.MINOR
+        assert "when packed" in qty.message
+
+        soap_ok = evaluate_compliance("Toilet Soap\nMRP: Rs. 50 (INCL OF ALL TAXES)\nNET WT. 100 g WHEN PACKED")
+        qty = next(r for r in soap_ok.results if r.key == "net_quantity")
+        assert qty.status == ScanSeverity.PASS
+
+    def test_detergent_label_realistic_ocr(self):
+        """Regression for a real liquid-detergent label: OCR-noise batch, typed
+        commodity name, manufacturer without 'MANUFACTURED BY' keyword, and
+        non-food (best-before / FSSAI not required)."""
+        text = """
+DOSE into eysrinshorgh w w mm
+TREAT^ ingestedthn seek medic ice.Rinse ans r
+SUITABLE FOR ALLTEMPERATURE SETINGS.
+NET QUANTITY:
+POUR Rs.185.00Rs.0.19/mL
+MADE IN INDIA RECRO8025-000-07AAACP4072C22 (PGHPPL)
+4987176336163> 2138/318
+Ligid Laundry Deergent.
+OCCAREONE RODUCSPRIVATELIMITED POAAS 66000
+"""
+        report = evaluate_compliance(text)
+        by_key = {r.key: r for r in report.results}
+
+        # OCR garbage must not be treated as a batch number
+        batch = by_key["batch_number"]
+        assert "eysrinshorgh" not in (batch.extracted_value or "")
+        assert batch.status == ScanSeverity.PASS
+
+        # Commodity name recovered despite the OCR typo
+        assert by_key["commodity_name"].status == ScanSeverity.PASS
+
+        # Manufacturer detected via company-suffix (public limited) even without a keyword
+        mfg = by_key["manufacturer"]
+        assert mfg.status == ScanSeverity.PASS
+
+        # Best-before & FSSAI are not required on a non-food package
+        assert by_key["dates"].status == ScanSeverity.PASS
+        assert by_key["fssai"].status == ScanSeverity.PASS
+
+    def test_food_package_still_requires_best_before_and_fssai(self):
+        text = "Rice\nMRP: Rs. 80.00 (INCL OF ALL TAXES)\nNET WT. 1 kg\nMANUFACTURED BY: ABC Foods Pvt Ltd"
+        report = evaluate_compliance(text)
+        by_key = {r.key: r for r in report.results}
+        assert by_key["dates"].status == ScanSeverity.MAJOR
+        assert by_key["fssai"].status == ScanSeverity.MINOR
+
+
+class TestMpe:
+    def test_table1_values(self):
+        from app.services.rule_engine import max_permissible_error
+        cases = {
+            50: 4.5, 100: 4.5, 200: 9.0, 300: 9.0, 500: 15.0,
+            1000: 15.0, 5000: 75.0, 10000: 150.0, 15000: 150.0, 20000: 200.0,
+        }
+        for declared, expected in cases.items():
+            assert max_permissible_error(declared) == expected, declared
+
+    def test_mpe_report(self):
+        from app.services.rule_engine import compute_mpe_report
+        report = compute_mpe_report("500g")
+        assert report and report[0]["basis"] == "Weight/Volume"
+        assert report[0]["max_permissible_error"] == 15.0
+        assert compute_mpe_report(None) is None
+        table2 = compute_mpe_report("10 pcs")
+        assert table2 and len(table2) == 3
 
 
 class TestScoring:
