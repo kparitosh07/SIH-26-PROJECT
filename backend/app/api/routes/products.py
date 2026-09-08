@@ -56,15 +56,15 @@ def upsert_product(payload: ProductUpsert, db: Session = Depends(get_db)):
     return ApiResponse(data=ProductRead.model_validate(product), message="Product saved")
 
 
+@router.get("/stats/categories", response_model=ApiResponse[list[dict]])
+def category_stats(db: Session = Depends(get_db)):
+    rows = db.query(Product.category, func.count(Product.id)).group_by(Product.category).all()
+    return ApiResponse(data=[{"category": r[0] or "Unknown", "count": r[1]} for r in rows])
+
+
 @router.get("/{product_id}", response_model=ApiResponse[ProductRead])
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(404, "Product not found")
     return ApiResponse(data=ProductRead.model_validate(product))
-
-
-@router.get("/stats/categories", response_model=ApiResponse[list[dict]])
-def category_stats(db: Session = Depends(get_db)):
-    rows = db.query(Product.category, func.count(Product.id)).group_by(Product.category).all()
-    return ApiResponse(data=[{"category": r[0] or "Unknown", "count": r[1]} for r in rows])

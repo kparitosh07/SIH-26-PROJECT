@@ -1,8 +1,21 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { TokenResponse, ApiResponse } from './apiTypes';
 
-const API_BASE =
-  `${import.meta.env.VITE_API_URL}/api/v1`;
+const getApiBaseUrl = (): string => {
+  const envUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+  if (!envUrl) {
+    return '/api/v1';
+  }
+  if (envUrl.endsWith('/api/v1')) {
+    return envUrl;
+  }
+  if (envUrl.endsWith('/api')) {
+    return `${envUrl}/v1`;
+  }
+  return `${envUrl}/api/v1`;
+};
+
+const API_BASE = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE,

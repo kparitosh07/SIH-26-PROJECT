@@ -69,7 +69,8 @@ class User(Base, AuditableMixin):
     audit_logs: Mapped[list["AuditLog"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
-        return f"<User id={self.id} username={self.username} role={self.role.value}>"
+        role_val = self.role.value if hasattr(self.role, "value") else str(self.role)
+        return f"<User id={self.id} username={self.username} role={role_val}>"
 
 
 class Product(Base, AuditableMixin):

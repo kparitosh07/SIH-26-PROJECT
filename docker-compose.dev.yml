@@ -6,15 +6,15 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-labelcheck}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-labelcheck_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-labelcheck}
+      POSTGRES_USER: ${POSTGRES_USER:-label_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-label_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-label_compliance}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-labelcheck}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-label_user}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -35,7 +35,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-labelcheck}:${POSTGRES_PASSWORD:-labelcheck_dev}@postgres:5432/${POSTGRES_DB:-labelcheck}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-label_user}:${POSTGRES_PASSWORD:-label_pass}@postgres:5432/${POSTGRES_DB:-label_compliance}
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
@@ -53,7 +53,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-labelcheck}:${POSTGRES_PASSWORD:-labelcheck_dev}@postgres:5432/${POSTGRES_DB:-labelcheck}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-label_user}:${POSTGRES_PASSWORD:-label_pass}@postgres:5432/${POSTGRES_DB:-label_compliance}
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
@@ -66,13 +66,12 @@ services:
   frontend:
     image: node:20-alpine
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
-    environment:
-      VITE_API_BASE: http://localhost:8000/api/v1
     working_dir: /app
     volumes:
       - ./frontend:/app
     ports:
-      - "5173:5173"
+      - "3000:3000"
+      - "5173:3000"
     depends_on:
       - api
 

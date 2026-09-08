@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     ALLOWED_FILE_TYPES: List[str] = [".png", ".jpg", ".jpeg", ".pdf", ".webp", ".bmp"]
 
     # --- CORS ---
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] | str = ["http://localhost:3000", "http://localhost:5173"]
 
     # --- OCR ---
     OCR_ENGINE: Literal["paddleocr", "tesseract"] = "paddleocr"
@@ -86,7 +86,14 @@ class Settings(BaseSettings):
     @classmethod
     def split_origins(cls, v):
         if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
+            # Clean brackets or outer quotes if provided as JSON-like list string
+            v = v.strip().lstrip("[").rstrip("]")
+            origins = []
+            for o in v.split(","):
+                cleaned = o.strip().strip('"').strip("'")
+                if cleaned:
+                    origins.append(cleaned)
+            return origins
         return v
 
     @field_validator("ALLOWED_FILE_TYPES", mode="before")
