@@ -28,7 +28,7 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "severity_if_missing": ScanSeverity.CRITICAL,
         "patterns": [
             r"MRP\s*(?:\(.*?\))?\s*[:.]?\s*(?:Rs\.?|INR|₹)?\s*(\d{1,5}(?:[.,]\d{1,2})?)",
-            r"(?:Rs\.?|INR|₹)\s*(\d{1,5}(?:[.,]\d{1,2})?)",
+            r"(?:\bRs\.?|\bINR|₹)\s*(\d{1,5}(?:[.,]\d{1,2})?)",
             r"MAX(?:IMUM)?\s+RET(?:AIL)?\s+PRICE\s*(?:Rs\.?|INR|₹)?\s*(\d{1,5}(?:[.,]\d{1,2})?)",
             r"\b(\d{1,4}\.\d{2})\b",
         ],

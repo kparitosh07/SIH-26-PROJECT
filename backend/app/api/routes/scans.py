@@ -30,10 +30,14 @@ MAX_SIZE = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 def _is_redis_alive() -> bool:
     import socket
+    from urllib.parse import urlparse
     try:
+        url = urlparse(settings.REDIS_URL)
+        host = url.hostname or "localhost"
+        port = url.port or 6379
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(0.1)
-        s.connect(("localhost", 6379))
+        s.settimeout(0.2)
+        s.connect((host, port))
         s.close()
         return True
     except Exception:

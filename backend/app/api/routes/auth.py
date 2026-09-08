@@ -26,6 +26,11 @@ logger = get_logger("auth")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _get_user_role_str(user: User) -> str:
+    role = getattr(user, "role", "inspector")
+    return role.value if hasattr(role, "value") else str(role)
+
+
 @router.post("/register", response_model=ApiResponse[UserRead], status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 def register(
@@ -51,7 +56,11 @@ def register(
     db.commit()
     db.refresh(user)
 
-    log_action(db, user, "user.registered", resource="users", resource_id=user.id, request=request)
+    try:
+        log_action(db, user, "user.registered", resource="users", resource_id=user.id, request=request)
+    except Exception as err:
+        logger.warning("Failed to log registration audit action: %s", err)
+
     logger.info("New user registered: %s", user.username)
     return ApiResponse(data=UserRead.model_validate(user), message="Registration successful")
 
@@ -68,19 +77,30 @@ def login(
     ).first()
 
     if not user or not verify_password(payload.password, user.hashed_password):
-        log_action(db, None, "auth.login_failed", details={"identifier": payload.username_or_email}, request=request)
+        try:
+            log_action(db, None, "auth.login_failed", details={"identifier": payload.username_or_email}, request=request)
+        except Exception as err:
+            logger.warning("Failed to log failed login audit action: %s", err)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled")
 
     user.last_login_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except Exception as err:
+        logger.warning("Failed to update last_login_at timestamp: %s", err)
 
-    access, access_exp = create_access_token(user.id, extra={"role": user.role.value})
+    role_str = _get_user_role_str(user)
+    access, access_exp = create_access_token(user.id, extra={"role": role_str})
     refresh, refresh_exp = create_refresh_token(user.id)
 
-    log_action(db, user, "auth.login", resource="users", resource_id=user.id, request=request)
+    try:
+        log_action(db, user, "auth.login", resource="users", resource_id=user.id, request=request)
+    except Exception as err:
+        logger.warning("Failed to log login audit action: %s", err)
+
     logger.info("User logged in: %s", user.username)
 
     return ApiResponse(
@@ -110,10 +130,15 @@ def refresh(
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
-    access, access_exp = create_access_token(user.id, extra={"role": user.role.value})
+    role_str = _get_user_role_str(user)
+    access, access_exp = create_access_token(user.id, extra={"role": role_str})
     refresh, refresh_exp = create_refresh_token(user.id)
 
-    log_action(db, user, "auth.token_refreshed", resource="users", resource_id=user.id, request=request)
+    try:
+        log_action(db, user, "auth.token_refreshed", resource="users", resource_id=user.id, request=request)
+    except Exception as err:
+        logger.warning("Failed to log token refresh audit action: %s", err)
+
     return ApiResponse(
         data=TokenResponse(
             access_token=access,
@@ -135,7 +160,10 @@ def logout(
     db: Session = Depends(get_db),
     request: Request = None,
 ):
-    log_action(db=db, user=user, action="auth.logout", resource="users", resource_id=user.id, request=request)
+    try:
+        log_action(db=db, user=user, action="auth.logout", resource="users", resource_id=user.id, request=request)
+    except Exception as err:
+        logger.warning("Failed to log logout audit action: %s", err)
     return ApiResponse(message="Logged out")
 
 
@@ -143,4 +171,5 @@ def logout(
 def verify_token(user: User = Depends(get_current_user_optional)):
     if not user:
         return ApiResponse(success=False, data={"valid": False})
-    return ApiResponse(data={"valid": True, "user_id": user.id, "role": user.role.value})
+    role_str = _get_user_role_str(user)
+    return ApiResponse(data={"valid": True, "user_id": user.id, "role": role_str})
