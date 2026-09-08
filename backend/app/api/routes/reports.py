@@ -5,10 +5,19 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, require_staff
-from app.models.entities import Report, Scan
+from app.models.entities import Report, Scan, UserRole
 from app.schemas.schemas import ApiResponse, Paginated, ReportGenerateRequest, ReportRead
 from app.services.audit import log_action
 from app.services.report_generator import generate_report
+
+
+def _report_accessible(scan: Scan | None, user) -> bool:
+    """Admins/auditors see all scans; other roles only their own."""
+    if scan is None:
+        return False
+    if scan.user_id == user.id:
+        return True
+    return user.role in (UserRole.ADMIN, UserRole.AUDITOR)
 
 router = APIRouter(prefix="/reports", tags=["reports"], dependencies=[Depends(require_staff)])
 
@@ -39,6 +48,15 @@ def generate(scan_id: int, payload: ReportGenerateRequest, db: Session = Depends
     ]
 
     path, sha256 = generate_report(scan, violations_data, payload)
+
+    # One report record per scan: replace any previously generated report so
+    # regeneration doesn't hit the unique constraint on reports.scan_id.
+    existing = db.query(Report).filter(Report.scan_id == scan_id).first()
+    if existing:
+        from pathlib import Path as P
+        P(existing.report_file_path).unlink(missing_ok=True)
+        db.delete(existing)
+        db.flush()
 
     report = Report(
         scan_id=scan_id,
@@ -82,9 +100,9 @@ def get_report(report_id: int, db: Session = Depends(get_db), user = Depends(get
     report = db.get(Report, report_id)
     if not report:
         raise HTTPException(404, "Report not found")
-    # Verify ownership through scan
+    # Verify access through scan
     scan = db.get(Scan, report.scan_id)
-    if not scan or scan.user_id != user.id:
+    if not _report_accessible(scan, user):
         raise HTTPException(404, "Report not found")
     return ApiResponse(data=ReportRead.model_validate(report))
 
@@ -95,7 +113,7 @@ def download_report(report_id: int, db: Session = Depends(get_db), user = Depend
     if not report:
         raise HTTPException(404, "Report not found")
     scan = db.get(Scan, report.scan_id)
-    if not scan or scan.user_id != user.id:
+    if not _report_accessible(scan, user):
         raise HTTPException(404, "Report not found")
 
     from pathlib import Path
@@ -116,7 +134,7 @@ def delete_report(report_id: int, db: Session = Depends(get_db), user = Depends(
     if not report:
         raise HTTPException(404, "Report not found")
     scan = db.get(Scan, report.scan_id)
-    if not scan or scan.user_id != user.id:
+    if not _report_accessible(scan, user):
         raise HTTPException(404, "Report not found")
 
     from pathlib import Path

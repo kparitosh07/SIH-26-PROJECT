@@ -22,6 +22,9 @@ class StorageBackend(ABC):
     def get_path(self, key: str) -> Path: ...
 
     @abstractmethod
+    def read_bytes(self, key: str) -> bytes | None: ...
+
+    @abstractmethod
     def public_url(self, key: str) -> str: ...
 
 
@@ -51,6 +54,12 @@ class LocalStorage(StorageBackend):
 
     def get_path(self, key: str) -> Path:
         return LOCAL_STATIC_PATH / key
+
+    def read_bytes(self, key: str) -> bytes | None:
+        try:
+            return LOCAL_STATIC_PATH.joinpath(key).read_bytes()
+        except OSError:
+            return None
 
     def public_url(self, key: str) -> str:
         return f"{settings.BASE_URL}/static/uploads/{key}"
@@ -91,6 +100,15 @@ class S3Storage(StorageBackend):
 
     def get_path(self, key: str) -> Path:
         raise NotImplementedError("Download via signed URL")
+
+    def read_bytes(self, key: str) -> bytes | None:
+        try:
+            import io
+            buf = io.BytesIO()
+            self.client.download_fileobj(Bucket=self.bucket, Key=key, Fileobj=buf)
+            return buf.getvalue()
+        except Exception:
+            return None
 
     def public_url(self, key: str) -> str:
         return self.client.generate_presigned_url(

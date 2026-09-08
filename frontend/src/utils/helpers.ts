@@ -5,8 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * The backend stores all timestamps in UTC but rows persisted via SQLite come
+ * back without a timezone marker, so browsers would otherwise interpret them
+ * as *local* time and show a shifted value. Treat any zone-less value as UTC.
+ */
+export function parseServerDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  let str = String(date).trim();
+  if (str && !/(Z|[+-]\d{2}:?\d{2})$/i.test(str)) {
+    str = (str.includes('T') ? str : str.replace(' ', 'T')) + 'Z';
+  }
+  return new Date(str);
+}
+
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions) {
-  const d = new Date(date);
+  const d = parseServerDate(date);
   return d.toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
@@ -18,7 +32,7 @@ export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOpt
 }
 
 export function formatRelativeTime(date: string | Date) {
-  const d = new Date(date);
+  const d = parseServerDate(date);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const minutes = Math.floor(diff / 60000);

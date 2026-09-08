@@ -145,6 +145,63 @@ class TestRuleEngine:
         report = evaluate_compliance(text)
         assert "mfg_date" not in report.extracted_fields
 
+    def test_mfd_is_manufacture_date_not_manufacturer(self):
+        """'MFD' (manufactured date) must map to mfg_date, not manufacturer,
+        and must not be double-counted as a best-before date."""
+        text = "MRP: Rs. 99.00 (INCL OF ALL TAXES)\nNET WT. 500g\nMFD 06/2024"
+        report = evaluate_compliance(text)
+        assert report.extracted_fields["mfg_date"] == "06/2024"
+        assert "manufacturer" not in report.extracted_fields
+        assert "dates" not in report.extracted_fields
+
+    def test_mfd_by_is_manufactured_by(self):
+        """Indian labels abbreviate 'Manufactured by' as 'MFD BY' / 'MFG BY' /
+        'Mfr. by'. These must be detected as the manufacturer."""
+        report = evaluate_compliance(
+            "MRP: Rs. 99.00 (INCL OF ALL TAXES)\nNET WT. 500g\nMFD BY Careone Products Pvt Ltd"
+        )
+        assert "Careone" in report.extracted_fields["manufacturer"]
+        assert "mfg_date" not in report.extracted_fields
+
+        report2 = evaluate_compliance(
+            "MRP: Rs. 99.00 (INCL OF ALL TAXES)\nNET WT. 500g\nMfr. by: ABC Industries Ltd"
+        )
+        assert "ABC Industries" in report2.extracted_fields["manufacturer"]
+
+    def test_mfg_date_not_read_as_manufacturer(self):
+        """'MFG 12/2024' must be the manufacture date and must NOT become a
+        manufacturer entry (e.g. 'DATE 06/2026' or '12/2024')."""
+        text = "Rice\nMRP: Rs. 40.00 (INCL OF ALL TAXES)\nNET WT. 1 kg\nMFG DATE 12/2024"
+        report = evaluate_compliance(text)
+        assert report.extracted_fields["mfg_date"] == "12/2024"
+        assert "manufacturer" not in report.extracted_fields
+
+    def test_manufacturer_keyword_alone(self):
+        text = "MRP: Rs. 99.00 (INCL OF ALL TAXES)\nNET WT. 100g\nMANUFACTURER: Xenia Chemicals Pvt. Ltd."
+        report = evaluate_compliance(text)
+        assert "Xenia" in report.extracted_fields["manufacturer"]
+
+    def test_mfd_mmyy_two_digit_year(self):
+        text = "MRP: Rs. 99.00 (INCL OF ALL TAXES)\nNET WT. 500g\nMFD: 05/26"
+        report = evaluate_compliance(text)
+        mfg = report.extracted_fields["mfg_date"]
+        assert mfg == "05/26"
+        assert "dates" not in report.extracted_fields
+
+    def test_mfg_date_not_read_as_manufacturer_or_best_before(self):
+        """'MFG 12/2024' must be the manufacture date; a date is not a manufacturer."""
+        text = "Rice\nMRP: Rs. 40.00 (INCL OF ALL TAXES)\nNET WT. 1 kg\nMFG 12/2024"
+        report = evaluate_compliance(text)
+        assert report.extracted_fields["mfg_date"] == "12/2024"
+        assert "manufacturer" not in report.extracted_fields
+        assert "dates" not in report.extracted_fields
+
+    def test_bare_expiry_date_still_detected(self):
+        """A bare MM/YYYY without MFG/MFD context is still a best-before hint."""
+        text = "MRP: Rs. 55.00 (INCL OF ALL TAXES)\nNET WT. 100 g\nEXP 06/2027"
+        report = evaluate_compliance(text)
+        assert report.extracted_fields["dates"] == "06/2027"
+
     def test_standard_pack_size_ok(self):
         """Rule 5 / Second Schedule: 1 kg rice is a standard size."""
         text = "Rice\nMRP: Rs. 80.00 (INCL OF ALL TAXES)\nNET WT. 1 kg"

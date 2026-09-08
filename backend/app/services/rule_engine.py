@@ -392,10 +392,11 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
     },
     "manufacturer": {
         "label": "Manufacturer Details",
-        "field_type": "text_keyword",
+        "field_type": "manufacturer",
         "severity_if_missing": ScanSeverity.MAJOR,
         "patterns": [
-            r"(?:M(?:ANUFACTURED|FG)\s+(?:BY|IN)|MFG\s*BY|M(?:ANUFACTURER)|\bMFG\.?)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{2,})",
+            r"\bM(?:ANUFACTURED|ANUFACTURER|FG|FD|FR|NFR)\b(?:\.\s*|\s+)(?:BY|IN)\b\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{2,})",
+            r"\bMANUFACTURER\.?\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{3,})",
             r"(?:PROCTER\s*&\s*GAMBLE|P&G|UNILEVER|NESTLE|DABUR|BRITANNIA|MARICO|ITC|HINDUSTAN)\s*([A-Za-z0-9 &.'-]{0,30})",
             r"(?:A\s+(?:GROUP\s+)?COMPANY\s+OF|PRODUCED BY|MARKETED BY|MKT BY)\s*[=:]?\s*([A-Za-z0-9][A-Za-z0-9 &.'-]{2,})",
             r"([A-Z][A-Za-z0-9&'.,\- ]{2,}?)\s*(?:PRIVATE\s*LIMITED|PVT\.?\s*LTD|P\s*LTD|LIMITED|LLP|INC\.?)",
@@ -410,7 +411,6 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
             r"(?:BEST\s+BEFORE|USE\s+BEFORE|USE\s+WITHIN|CONSUME\s+WITHIN|SHELF\s+LIFE)\s*[:.]?\s*(\d{1,3}\s*(?:DAYS?|MONTHS?|YEARS?|WEEKS?)(?:\s+FROM\s+[A-Za-z\s]{2,25})?)",
             r"(?:BEST\s+BEFORE(?:\s+\d+\s+(?:MONTHS|DAYS))?|EXPIRY|EXP(?:IRES)?.?\s+DATE)\s*[:.]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4}|\d{1,2}\s[A-Z]{3}\s?\d{2,4})",
             r"(?:USE\s+BY|SELL\s+BY|USE\s+BEFORE)\s*[:.]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4})",
-            r"(?:M\.?F\.?G|PKD|PACKED)\s*[.:]?\s*([A-Z]{0,3}\s?\d{1,2}/?\d{1,2}/?\d{2,4}|\d{2}/\d{2,4})",
             r"\b(\d{2}/\d{2,4})\b",
         ],
     },
@@ -465,8 +465,8 @@ REGEX_RULES: dict[str, dict[str, Any]] = {
         "field_type": "month_year",
         "severity_if_missing": ScanSeverity.MAJOR,
         "patterns": [
-            r"(?:MFG|M(?:ANUFACTUR)?|PROD|PKD|PACKED|PRE-?PACKED|PACKING|MANUFACTURING|IMPORTED)\s*(?:DATE|DT|ON)?\s*[:.]?\s*(\d{1,2}[/-]\d{4}|\d{2}[/-]\d{2}[/-]\d{2,4})",
-            r"(?:MFG|M(?:ANUFACTUR)?|PKD|PACKED)\s*(?:DATE|ON)?\s*[:.]?\s*([A-Z]{3,}[\s-]?\d{4}|\d{1,2}\s?[A-Z]{3,}\s?\d{4})",
+            r"(?:MFG|MFD|M(?:ANUFACTUR)?|PROD|PKD|PACKED|PRE-?PACKED|PACKING|MANUFACTURING|IMPORTED)\s*(?:DATE|DT|ON)?\s*[:.]?\s*(\d{2}[/-]\d{2}[/-]\d{2,4}|\d{1,2}[/-]\d{4}|\d{1,2}[/-]\d{2})",
+            r"(?:MFG|MFD|M(?:ANUFACTUR)?|PKD|PACKED)\s*(?:DATE|ON)?\s*[:.]?\s*([A-Z]{3,}[\s-]?\d{4}|\d{1,2}\s?[A-Z]{3,}\s?\d{4})",
             r"(?:month|year)\s+of\s+(?:manufacture|pre-?packing|packing|import)\s*[:.]?\s*(\d{1,2}[/-]\d{4}|[A-Z]{3,}[\s-]?\d{4})",
         ],
     },
@@ -558,14 +558,15 @@ def _validate_fssai(value: str) -> bool:
 
 
 def _validate_month_year(value: str) -> bool:
-    """Month & year of manufacture/pre-packing, e.g. 05/2026, 05-2026, MAY 2026."""
+    """Month & year of manufacture/pre-packing, e.g. 05/2026, 05-2026, 05/26, MAY 2026."""
     norm = "".join(value.upper().split())
     return bool(
         re.fullmatch(
-            r"(?:\d{1,2}[/-]\d{4}"                     # 05/2026, 5-2026
-            r"|\d{2}[/-]\d{2}[/-]\d{2,4}"             # 25/12/2026
-            r"|[A-Z]{3,}[\s-]?\d{4}"                  # MAY2026, MAY-2026
-            r"|\d{1,2}[A-Z]{3,}\d{4})",               # 05MAY2026
+            r"(?:\d{2}[/-]\d{2}[/-]\d{2,4}"             # 25/12/2026, 25-12-26
+            r"|\d{1,2}[/-]\d{4}"                        # 05/2026, 5-2026
+            r"|\d{1,2}[/-]\d{2}"                        # 05/26, 05-26 (MM/YY)
+            r"|[A-Z]{3,}[\s-]?\d{4}"                    # MAY2026, MAY-2026
+            r"|\d{1,2}[A-Z]{3,}\d{4})",                 # 05MAY2026
             norm,
         )
     )
@@ -586,6 +587,32 @@ def _validate_batch_number(value: str) -> bool:
     return True
 
 
+def _validate_text_keyword(value: str) -> bool:
+    return len(value.strip()) >= 3
+
+
+def _validate_manufacturer(value: str) -> bool:
+    """A manufacturer must be a company-like name, not a date or numeric token.
+
+    Guards against 'MFG 12/2024' style lines being read as '12/2024' manufacturer.
+    """
+    v = value.strip()
+    if len(v) < 3:
+        return False
+    if re.match(r"\d{1,2}\s*[/-]\s*\d{2,4}", v):
+        return False
+    digits = sum(ch.isdigit() for ch in v)
+    return digits < len(v) * 0.6
+
+
+def _is_date_like(value: str) -> bool:
+    """True when a token is essentially a date/amount (digits, / - . separators)."""
+    v = value.strip()
+    if not v or not any(ch.isdigit() for ch in v):
+        return False
+    return bool(re.fullmatch(r"[\d.,/\-:\s]{3,16}", v))
+
+
 FIELD_VALIDATORS = {
     "money": _validate_money,
     "quantity": _validate_quantity,
@@ -594,7 +621,8 @@ FIELD_VALIDATORS = {
     "fssai": _validate_fssai,
     "month_year": _validate_month_year,
     "batch": _validate_batch_number,
-    "text_keyword": lambda v: len(v.strip()) >= 3,
+    "manufacturer": _validate_manufacturer,
+    "text_keyword": _validate_text_keyword,
 }
 
 
@@ -648,6 +676,16 @@ def _run_field_extraction(text: str, rules: dict[str, dict[str, Any]]) -> dict[s
                 break
         if value:
             extracted[key] = FieldExtraction(key=key, value=value, evidence=evidence, matched_pattern=used_pattern)
+
+    # A manufacture / packed date must not also be counted as the best-before
+    # date. Labels commonly print 'MFG 12/2024' or 'MFD 05/26'; the loose
+    # best-before fallback would otherwise report that date a second time.
+    if "dates" in extracted and "mfg_date" in extracted:
+        d_digits = re.sub(r"\D", "", extracted["dates"].value)
+        m_digits = re.sub(r"\D", "", extracted["mfg_date"].value)
+        if d_digits == m_digits or d_digits.endswith(m_digits) or m_digits.endswith(d_digits):
+            del extracted["dates"]
+
     return extracted
 
 
@@ -693,6 +731,20 @@ def evaluate_compliance(raw_text: str, rules: dict[str, dict[str, Any]] | None =
                     ok = False
                     context_message = message(extraction.value, text) if callable(message) else message
                     break
+        elif key == "manufacturer" and _is_date_like(extraction.value):
+            # A numeric/date token such as '12/2024' after 'MFG'/'MFD' is not a
+            # valid manufacturer name - treat the declaration as absent.
+            extraction = None
+        if extraction is None:
+            results.append(
+                RuleResult(
+                    key=key,
+                    label=label,
+                    status=severity_if_missing,
+                    message=f"'{label}' not found on label.",
+                )
+            )
+            continue
         if ok:
             results.append(
                 RuleResult(

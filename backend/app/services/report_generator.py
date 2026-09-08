@@ -13,15 +13,20 @@ import hashlib
 import os
 import textwrap
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 
+from PIL import Image as PILImage, ImageOps
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     Frame,
+    Image,
     PageTemplate,
     Paragraph,
     SimpleDocTemplate,
@@ -33,6 +38,7 @@ from reportlab.platypus import (
 from app.core.config import settings
 from app.models.entities import Scan, ScanSeverity
 from app.schemas.schemas import ReportGenerateRequest
+from app.services.storage import get_storage
 
 
 REPORT_DIR = Path(settings.REPORT_DIR)
@@ -46,6 +52,40 @@ styles = getSampleStyleSheet()
 
 title_style = ParagraphStyle("TitleLarge", parent=styles["Title"], fontSize=24, spaceAfter=12, alignment=TA_CENTER)
 subtitle_style = ParagraphStyle("Subtitle", parent=styles["Normal"], fontSize=12, textColor=colors.HexColor("#555"), spaceAfter=6, alignment=TA_CENTER)
+
+
+def _register_hindi_font() -> str:
+    """Register a Devanagari-capable font so 'मानक' renders correctly."""
+    candidates = [
+        (r"C:\Windows\Fonts\Nirmala.ttc", 0),
+        (r"C:\Windows\Fonts\mangal.ttf", None),
+        ("/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf", None),
+        ("/usr/share/fonts/opentype/noto/NotoSansDevanagari-Regular.ttf", None),
+    ]
+    for path, idx in candidates:
+        if not Path(path).exists():
+            continue
+        try:
+            if idx is not None:
+                pdfmetrics.registerFont(TTFont("HindiFont", path, subfontIndex=idx))
+            else:
+                pdfmetrics.registerFont(TTFont("HindiFont", path))
+            return "HindiFont"
+        except Exception:
+            continue
+    return "Helvetica"
+
+
+hindi_font = _register_hindi_font()
+hindi_brand_style = ParagraphStyle(
+    "HindiBrand",
+    parent=styles["Normal"],
+    fontName=hindi_font,
+    fontSize=16,
+    textColor=colors.HexColor("#2c5f8a"),
+    spaceAfter=6,
+    alignment=TA_CENTER,
+)
 heading1 = ParagraphStyle("H1", parent=styles["Heading1"], fontSize=16, spaceBefore=18, spaceAfter=10, textColor=colors.HexColor("#1e3a5f"))
 heading2 = ParagraphStyle("H2", parent=styles["Heading2"], fontSize=13, spaceBefore=12, spaceAfter=6, textColor=colors.HexColor("#2c5f8a"))
 body = ParagraphStyle("Body", parent=styles["Normal"], fontSize=10, leading=14, spaceAfter=6)
@@ -63,12 +103,9 @@ SEVERITY_COLOR = {
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _sev_badge(severity: ScanSeverity) -> Paragraph:
+def _sev_html(severity: ScanSeverity) -> str:
     color = SEVERITY_COLOR.get(severity, colors.grey)
-    return Paragraph(
-        f'<font color="{color.hexval()}"><b>{severity.value.upper()}</b></font>',
-        ParagraphStyle("Badge", parent=body, alignment=TA_CENTER),
-    )
+    return f'<font color="{color.hexval()}"><b>{severity.value.upper()}</b></font>'
 
 
 def _fmt_dt(dt: datetime | None) -> str:
@@ -89,6 +126,72 @@ def _score_color(score: float | None) -> str:
 
 def _wrap(text: str, width: int = 90) -> str:
     return "<br/>".join(textwrap.wrap(text, width=width)) if text else "—"
+
+
+def _is_compliant(score: float | None) -> bool:
+    return score is not None and score >= 100
+
+
+def _load_label_image(scan: Scan) -> Image | None:
+    """Fetch the uploaded label from storage and return a fitted PNG flowable."""
+    try:
+        data = get_storage().read_bytes(scan.file_path)
+        if not data:
+            return None
+        with ImageOps.exif_transpose(PILImage.open(BytesIO(data))) as src:
+            if src.mode in ("RGBA", "P", "LA"):
+                img = src.convert("RGB")
+            else:
+                img = src.convert("RGB")
+            w, h = img.size
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=92)
+        buf.seek(0)
+        max_w, max_h = 62 * mm, 78 * mm
+        ratio = min(max_w / w, max_h / h, 1.5)
+        return Image(buf, width=w * ratio, height=h * ratio)
+    except Exception:
+        return None
+
+
+def _verdict_flowables(scan: Scan) -> list:
+    score = scan.compliance_score
+    compliant = _is_compliant(score)
+    verdict_text = "COMPLIANT" if compliant else "NON-COMPLIANT"
+    verdict_color = "#1b7a2f" if compliant else "#b71c1c"
+    bg_color = "#e8f5e9" if compliant else "#fdecea"
+    score_text = "N/A" if score is None else f"{score:.1f} / 100"
+
+    block = [
+        Paragraph(f"Scan ID: <b>{scan.id}</b>", body),
+        Paragraph(f"File: <b>{scan.original_filename}</b>", body),
+        Paragraph(f"Uploaded: <b>{_fmt_dt(scan.created_at)}</b>", body),
+        (Paragraph(f"Inspector: <b>User ID {scan.user_id}</b>", body) if scan.user_id else Spacer(1, 0)),
+        Spacer(1, 8 * mm),
+        Paragraph(
+            f'Overall Score: <font color="{_score_color(score)}"><b>{score_text}</b></font>',
+            ParagraphStyle("ScoreStyle", parent=body, fontSize=13),
+        ),
+        Paragraph("", body),
+        Paragraph(
+            f'<font color="{verdict_color}" size="18"><b>{verdict_text}</b></font>',
+            ParagraphStyle("VerdictStyle", parent=body, alignment=TA_LEFT, spaceBefore=4),
+        ),
+    ]
+
+    inner = Table(
+        [[block[-1]]],
+        colWidths=[92 * mm],
+        rowHeights=[12 * mm],
+        style=TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(bg_color)),
+            ("BOX", (0, 0), (-1, -1), 1.2, colors.HexColor(verdict_color)),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6 * mm),
+        ]),
+    )
+    block[-1] = inner
+    return block
 
 
 # ---------------------------------------------------------------------------
@@ -116,28 +219,42 @@ def generate_report(
     width, height = A4
 
     # ==================== COVER ====================
-    story.append(Spacer(1, 30 * mm))
+    story.append(Spacer(1, 24 * mm))
     story.append(Paragraph("Label Compliance Report", title_style))
     story.append(Spacer(1, 6 * mm))
-    story.append(Paragraph("AI-based Packaging Label Compliance Checker", subtitle_style))
+    story.append(Paragraph("मानक (MANAK)", hindi_brand_style))
     story.append(Spacer(1, 12 * mm))
-    story.append(Paragraph(f"Scan ID: <b>{scan.id}</b>", body))
-    story.append(Paragraph(f"File: <b>{scan.original_filename}</b>", body))
-    story.append(Paragraph(f"Uploaded: <b>{_fmt_dt(scan.created_at)}</b>", body))
-    if scan.user_id:
-        story.append(Paragraph(f"Inspector: <b>User ID {scan.user_id}</b>", body))
-    story.append(Spacer(1, 10 * mm))
 
-    score = scan.compliance_score
-    verdict = scan.verdict
-    story.append(Paragraph(
-        f'Overall Score: <font color="{_score_color(score)}"><b>{score or 0:.1f} / 100</b></font>',
-        ParagraphStyle("Score", parent=body, fontSize=14, alignment=TA_CENTER),
-    ))
-    story.append(Paragraph(f"Verdict: {_sev_badge(verdict or ScanSeverity.PASS).text}", body))
-    story.append(Spacer(1, 12 * mm))
+    left = _verdict_flowables(scan)
+    image_flow = _load_label_image(scan)
+
+    if image_flow is not None:
+        caption = Paragraph("Uploaded label image", small)
+        right = [
+            image_flow,
+            Spacer(1, 2 * mm),
+            caption,
+        ]
+        cover = Table(
+            [[left, right]],
+            colWidths=[100 * mm, 62 * mm],
+            style=TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 0), (1, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            ]),
+        )
+    else:
+        cover = Table(
+            [[left]],
+            colWidths=[172 * mm],
+            style=TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]),
+        )
+    story.append(cover)
+    story.append(Spacer(1, 10 * mm))
     story.append(Paragraph(settings.PDF_LICENSE_HEADER, small))
-    story.append(Spacer(1, 20 * mm))
+    story.append(Spacer(1, 18 * mm))
 
     # ==================== COMPLIANCE SUMMARY ====================
     story.append(Paragraph("1. Compliance Summary", heading1))
@@ -152,17 +269,18 @@ def generate_report(
     ]
 
     v_by_key = {v["field_key"]: v for v in violations}
+    cell_center = ParagraphStyle("CellCenter", parent=small, alignment=TA_CENTER)
     rows = [["#", "Field", "Status", "Extracted Value", "Evidence"]]
     for i, (f, lbl) in enumerate(zip(fields, labels), 1):
         v = v_by_key.get(f)
         if v:
-            status = _sev_badge(ScanSeverity(v["status"])).text
-            val = _wrap(v.get("extracted_value") or "—")
-            ev = _wrap(v.get("evidence") or "—")
+            status = Paragraph(_sev_html(ScanSeverity(v["status"])), cell_center)
+            val = Paragraph(_wrap(v.get("extracted_value") or "—"), small)
+            ev = Paragraph(_wrap(v.get("evidence") or "—"), small)
         else:
-            status = _sev_badge(ScanSeverity.PASS).text
-            val = "—"
-            ev = "Not found"
+            status = Paragraph(_sev_html(ScanSeverity.PASS), cell_center)
+            val = Paragraph("—", small)
+            ev = Paragraph("Not found", small)
         rows.append([str(i), lbl, status, val, ev])
 
     table = Table(rows, colWidths=[25 * mm, 35 * mm, 25 * mm, 50 * mm, 55 * mm])
@@ -186,7 +304,7 @@ def generate_report(
     else:
         for v in failing:
             sev = ScanSeverity(v["status"])
-            story.append(Paragraph(f"<b>{v['label']}</b> — {_sev_badge(sev).text}", body))
+            story.append(Paragraph(f"<b>{v['label']}</b> — {_sev_html(sev)}", body))
             story.append(Paragraph(f"Message: {v['message']}", body))
             if v.get("extracted_value"):
                 story.append(Paragraph(f"Extracted: <font face='Courier'>{v['extracted_value']}</font>", body))
